@@ -867,7 +867,7 @@ if page == "📤  Update from Excel":
         # 👑 VIP mode
         if password1.lower() == "kishan":
             st.success("👑 Welcome back, boss. You *are* the system.")
-        elif password1.lower() != "update":
+        elif password1.lower() != "updatek":
             st.error(funny(WRONG_PASSWORD_LINES))
             st.toast("🔐 Access denied!", icon="🚨")
         elif uploaded_file is None:
@@ -930,7 +930,7 @@ elif page == "⚙️  Update by DN-60":
         # 👑 VIP mode
         if password2.lower() == "kishan":
             st.success("👑 Right away, boss. Building at your command.")
-        elif password2.lower() != "dn60":
+        elif password2.lower() != "dn60k":
             st.error(funny(WRONG_PASSWORD_LINES))
             st.toast("🔐 Access denied!", icon="🚨")
         else:
