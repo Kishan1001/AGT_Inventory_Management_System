@@ -1,6 +1,10 @@
 # Secrets
 .streamlit/secrets.toml
+.streamlit/secrets.toml.example
+__pycache__/
+*.pyc
 .env
+.vscode/
 
 # Python
 __pycache__/
@@ -18,7 +22,6 @@ Files/
 !requirements.txt
 
 # IDE
-.vscode/
 .idea/
 *.swp
 
