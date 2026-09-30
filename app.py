@@ -2,8 +2,8 @@
 # ---------------------------------------------------------
 #  STREAMLIT WEB UI — Enterprise Dashboard
 #  Palette: #1F2A44 (Navy) · #E8DCC8 (Cream) · #C6A75E (Gold)
-#  v8: 5-card header (added Last Checked) · removed duplicate cards
-#      · full-width search · persistent data · fixed Clear button
+#  v11: premium HTML table with row borders · 5-card header
+#       · full-width search · persistent data · fixed Clear button
 #  Built with ❤️ for Kishan
 # ---------------------------------------------------------
 import io
@@ -90,6 +90,7 @@ st.markdown("""
 <style>
     /* ---------- Professional Typeface ---------- */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
     :root {
         --navy:     #1F2A44;
@@ -439,29 +440,157 @@ st.markdown("""
     }
 
     /* =========================================================
-       DATAFRAMES — Pure Black Text
+       INVENTORY HTML TABLE — Premium Look with Row Borders
        ========================================================= */
-    [data-testid="stDataFrame"],
-    [data-testid="stDataFrame"] *,
-    [data-testid="stDataFrame"] div,
-    [data-testid="stDataFrame"] span,
-    [data-testid="stDataFrame"] p {
-        color: #000000 !important;
-        font-weight: 500 !important;
+    .inv-table-wrap {
+        max-height: 720px;
+        overflow-y: auto;
+        overflow-x: auto;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: var(--white);
+        box-shadow: 0 4px 16px -8px rgba(31,42,68,0.12);
     }
-    [data-testid="stDataFrame"] [role="gridcell"],
-    [data-testid="stDataFrame"] [role="gridcell"] * {
-        color: #000000 !important;
+    .inv-table-wrap::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
     }
-    [data-testid="stDataFrame"] [role="columnheader"],
-    [data-testid="stDataFrame"] [role="columnheader"] * {
-        color: #1F2A44 !important;
+    .inv-table-wrap::-webkit-scrollbar-track {
+        background: #F7F8FA;
+        border-radius: 10px;
+    }
+    .inv-table-wrap::-webkit-scrollbar-thumb {
+        background: #D1D5DB;
+        border-radius: 10px;
+        border: 2px solid #F7F8FA;
+    }
+    .inv-table-wrap::-webkit-scrollbar-thumb:hover {
+        background: var(--gold);
+    }
+
+    /* ---------- Main Table ---------- */
+    .inv-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.9rem;
+        background: var(--white);
+        font-feature-settings: "tnum";
+    }
+
+    /* ---------- Header ---------- */
+    .inv-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        background: var(--navy) !important;
+        color: #FFFFFF !important;
+        font-size: 0.72rem !important;
         font-weight: 700 !important;
-        background-color: #F4F6FA !important;
+        letter-spacing: 0.08em !important;
+        text-transform: uppercase !important;
+        text-align: left !important;
+        padding: 0.85rem 1rem !important;
+        border: none !important;
+        border-bottom: 3px solid var(--gold) !important;
+        white-space: nowrap;
+        user-select: none;
     }
-    [data-testid="stDataFrame"] canvas {
-        color-scheme: light !important;
-        filter: contrast(1.15) !important;
+    .inv-table thead th:first-child {
+        border-top-left-radius: 12px;
+    }
+    .inv-table thead th:last-child {
+        border-top-right-radius: 12px;
+    }
+    .inv-table thead th:nth-child(6),
+    .inv-table thead th:nth-child(7) {
+        text-align: right !important;
+    }
+
+    /* ---------- Body Cells (with row border) ---------- */
+    .inv-table tbody td {
+        color: var(--ink) !important;
+        font-size: 0.875rem !important;
+        font-weight: 500 !important;
+        padding: 0.75rem 1rem !important;
+        border: none !important;
+        border-bottom: 1px solid #E5E7EB !important;
+        vertical-align: middle;
+        line-height: 1.4;
+        background: transparent;
+        transition: background 0.12s ease;
+    }
+
+    /* ---------- Column-Specific Styling ---------- */
+    .inv-table tbody td:nth-child(1) {
+        font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+        font-size: 0.82rem !important;
+        font-weight: 600 !important;
+        color: var(--navy) !important;
+        letter-spacing: -0.01em;
+    }
+    .inv-table tbody td:nth-child(2) {
+        font-weight: 600 !important;
+        color: var(--ink) !important;
+    }
+    .inv-table tbody td:nth-child(3),
+    .inv-table tbody td:nth-child(4) {
+        color: var(--muted) !important;
+        font-size: 0.82rem !important;
+    }
+    .inv-table tbody td:nth-child(5) {
+        font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+        font-size: 0.82rem !important;
+        color: var(--muted) !important;
+    }
+    .inv-table tbody td:nth-child(6) {
+        text-align: right !important;
+        font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+        font-weight: 700 !important;
+        font-size: 0.9rem !important;
+        color: var(--navy) !important;
+        font-variant-numeric: tabular-nums;
+    }
+    .inv-table tbody td:nth-child(7) {
+        text-align: right !important;
+        color: var(--muted) !important;
+        font-size: 0.78rem !important;
+        font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    /* ---------- Zebra Stripes ---------- */
+    .inv-table tbody tr:nth-child(even) td {
+        background-color: #FAFBFD !important;
+    }
+
+    /* ---------- Hover ---------- */
+    .inv-table tbody tr:hover td {
+        background-color: rgba(198,167,94,0.10) !important;
+    }
+
+    /* ---------- Last Row — keep border ---------- */
+    .inv-table tbody tr:last-child td {
+        border-bottom: 1px solid #E5E7EB !important;
+    }
+    .inv-table tbody tr:last-child td:first-child {
+        border-bottom-left-radius: 12px;
+    }
+    .inv-table tbody tr:last-child td:last-child {
+        border-bottom-right-radius: 12px;
+    }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 768px) {
+        .inv-table thead th,
+        .inv-table tbody td {
+            padding: 0.6rem 0.7rem !important;
+            font-size: 0.8rem !important;
+        }
+        .inv-table thead th {
+            font-size: 0.68rem !important;
+        }
     }
 
     /* =========================================================
@@ -533,7 +662,7 @@ st.markdown("""
         color: #FFFFFF !important;
     }
     [data-testid="stSidebar"] [role="radiogroup"] label > div:first-child {
-        display: none;   /* hide radio circle */
+        display: none;
     }
     [data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) {
         background: rgba(198,167,94,0.16);
@@ -631,7 +760,7 @@ with st.sidebar:
     st.caption(f"Started: {datetime.now().strftime('%d-%b-%Y %H:%M')}")
 
     st.markdown("---")
-    st.caption("© 2026 AGT Inventory System · by Kishan")
+    st.caption("© 2026 AASHDHA GLOBAL TECH")
 
 # =========================================================
 #  HERO HEADER
@@ -657,7 +786,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # =========================================================
-#  QUICK STATS — 5 cards (Last Checked merged in)
+#  QUICK STATS — 5 cards
 # =========================================================
 try:
     total_items = collection.count_documents({})
@@ -934,7 +1063,7 @@ elif page == "📊  Check Production":
             st.error(f"❌ Error: {e}")
 
 # ---------------------------------------------------------
-#  SECTION 4 — Required items for target (with category + subcategory)
+#  SECTION 4 — Required items for target
 # ---------------------------------------------------------
 elif page == "🧮  Required Items":
     st.markdown('<div class="section-header">🧮 Parts Required for Target Quantity</div>', unsafe_allow_html=True)
@@ -1002,7 +1131,6 @@ elif page == "🧮  Required Items":
             if total_short == 0:
                 st.success("✅ You already have enough stock! No order needed.")
             else:
-                # 🎭 Roast depending on how many parts need ordering
                 if total_short >= 8:
                     st.warning(f"🛒 **ORDER LIST:** — {total_short} parts to order. Kishan, your wallet just fainted.")
                 elif total_short >= 4:
@@ -1081,12 +1209,10 @@ elif page == "📋  View Inventory":
         st.info("Click **🔄 Load Inventory** to fetch current stock.")
         st.stop()
 
-    total_qty = int(df["Quantity"].sum())
-
     st.markdown("<br>", unsafe_allow_html=True)
 
     # =============================================
-    #  🔍 SEARCH & FILTERS  (full-width row)
+    #  🔍 SEARCH & FILTERS
     # =============================================
     st.markdown(
         '<div class="section-header" style="font-size:1.05rem; margin-bottom:0.5rem;">'
@@ -1094,7 +1220,6 @@ elif page == "📋  View Inventory":
         unsafe_allow_html=True,
     )
 
-    # Row 1 — full-width search bar
     search_text = st.text_input(
         "Search by Item Name or Code",
         placeholder="🔎 Try: O-RING, BOLT, CIRCLIP, or a code like 94181553L",
@@ -1103,7 +1228,6 @@ elif page == "📋  View Inventory":
         label_visibility="collapsed",
     )
 
-    # Row 2 — Category | Subcategory | empty space
     fc1, fc2, fc3 = st.columns([1, 1, 2])
 
     with fc1:
@@ -1170,15 +1294,32 @@ elif page == "📋  View Inventory":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ---------- Filtered table ----------
+    # ---------- Filtered table (premium HTML table) ----------
     if filtered.empty:
         st.info("🔍 No items match your search. Try different keywords or clear filters.")
     else:
-        st.dataframe(
-            filtered,
-            use_container_width=True,
-            hide_index=True,
-            height=700,
+        # Clean "None" → "—" and rename columns for a nicer header
+        display_df = filtered.fillna("—").astype(str).replace("None", "—")
+        display_df = display_df.rename(columns={
+            "Item_code":        "Code",
+            "Item_name":        "Item Name",
+            "Item_category":    "Category",
+            "Item_subcategory": "Subcategory",
+            "Location":         "Location",
+            "Quantity":         "Qty",
+            "Updated_date":     "Updated",
+        })
+
+        html_table = display_df.to_html(
+            index=False,
+            classes="inv-table",
+            escape=False,
+            border=0,
+        )
+
+        st.markdown(
+            f'<div class="inv-table-wrap">{html_table}</div>',
+            unsafe_allow_html=True,
         )
 
     # ---------- Download (respects filters) ----------
