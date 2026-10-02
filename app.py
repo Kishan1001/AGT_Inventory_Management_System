@@ -984,6 +984,7 @@ if page == "📤  Update from Excel":
                     progress = st.progress(0)
 
                     for index, row in df.iterrows():
+                        data = row.to_dict()
                         # ---------- Normalize fields ----------
                         data["_id"] = str(data["Item_code"]).strip()
                         data["Item_code"] = str(data["Item_code"]).strip()
