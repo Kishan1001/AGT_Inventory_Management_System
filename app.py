@@ -2,8 +2,7 @@
 # ---------------------------------------------------------
 #  STREAMLIT WEB UI — Enterprise Dashboard
 #  Palette: #1F2A44 (Navy) · #E8DCC8 (Cream) · #C6A75E (Gold)
-#  v12: uppercase name/category/subcategory on upload
-#       · premium HTML table · 5-card header · full-width search
+#  v18: fonts reduced by 1 step · Premium SaaS sidebar
 #  Built with ❤️ for Kishan
 # ---------------------------------------------------------
 import io
@@ -84,7 +83,7 @@ st.set_page_config(
 )
 
 # =========================================================
-#  CUSTOM CSS — Professional Enterprise Theme
+#  CUSTOM CSS — Professional Enterprise Theme (Fonts −1 step)
 # =========================================================
 st.markdown("""
 <style>
@@ -111,49 +110,155 @@ st.markdown("""
         font-feature-settings: "cv02","cv03","cv04","cv11";
         -webkit-font-smoothing: antialiased;
         color: var(--ink);
-        font-size: 16px;
+        font-size: 15px;   /* was 16px → −1 */
     }
 
     .stApp { background: #FAFAF7; }
 
-    /* ---------- Hide Streamlit chrome (but KEEP sidebar toggle) ---------- */
+    /* =========================================================
+       HIDE STREAMLIT CHROME — KEEP SIDEBAR TOGGLE
+       ========================================================= */
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
 
-    @media (min-width: 769px) {
-        header { visibility: hidden; }
+    header[data-testid="stHeader"] {
+        background: transparent !important;
+        height: auto !important;
+        min-height: 0 !important;
+        visibility: visible !important;
+        pointer-events: none !important;
+        z-index: 999999 !important;
     }
 
-    /* Mobile sidebar toggle — visible + themed */
-    [data-testid="collapsedControl"],
-    [data-testid="stSidebarCollapsedControl"] {
-        visibility: visible !important;
-        display: flex !important;
-        background: #1F2A44 !important;
-        border-radius: 0 8px 8px 0 !important;
-        border: 1px solid #C6A75E !important;
-        border-left: none !important;
-        padding: 6px 8px !important;
+    header[data-testid="stHeader"] [data-testid="stMainMenu"],
+    header[data-testid="stHeader"] button[kind="header"],
+    header[data-testid="stHeader"] button[data-testid="baseButton-header"] {
+        position: fixed !important;
         top: 12px !important;
-        left: 0 !important;
-        z-index: 999999 !important;
-        box-shadow: 0 4px 12px rgba(31,42,68,0.25) !important;
+        right: 12px !important;
+        left: auto !important;
+        z-index: 999998 !important;
+        pointer-events: auto !important;
+        visibility: visible !important;
     }
-    [data-testid="collapsedControl"] svg,
-    [data-testid="stSidebarCollapsedControl"] svg {
+
+    /* -------- STATE 1: Sidebar CLOSED -------- */
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="collapsedControl"] {
+        visibility: visible !important;
+        opacity: 1 !important;
+        display: flex !important;
+        pointer-events: auto !important;
+
+        position: fixed !important;
+        top: 70px !important;
+        left: 0 !important;
+        right: auto !important;
+
+        width: 38px !important;
+        height: 42px !important;
+
+        background: #1F2A44 !important;
+        border: 1.5px solid #C6A75E !important;
+        border-left: none !important;
+        border-radius: 0 10px 10px 0 !important;
+
+        padding: 6px !important;
+        margin: 0 !important;
+
+        z-index: 2147483647 !important;
+        box-shadow: 0 4px 14px rgba(31,42,68,0.5),
+                    0 0 0 1px rgba(198,167,94,0.15) !important;
+
+        align-items: center !important;
+        justify-content: center !important;
+
+        animation: toggle-pulse 3s ease-in-out infinite !important;
+        transition: background 0.15s ease, transform 0.15s ease !important;
+    }
+
+    [data-testid="stSidebarCollapsedControl"]:hover,
+    [data-testid="collapsedControl"]:hover {
+        background: #2A3856 !important;
+        transform: translateX(2px) !important;
+    }
+
+    @keyframes toggle-pulse {
+        0%, 100% { box-shadow: 0 4px 14px rgba(31,42,68,0.5),
+                               0 0 0 0 rgba(198,167,94,0.4); }
+        50%      { box-shadow: 0 4px 14px rgba(31,42,68,0.5),
+                               0 0 0 8px rgba(198,167,94,0); }
+    }
+
+    [data-testid="stSidebarCollapsedControl"] svg,
+    [data-testid="collapsedControl"] svg {
         fill: #C6A75E !important;
         color: #C6A75E !important;
+        stroke: #C6A75E !important;
         width: 22px !important;
         height: 22px !important;
+        display: block !important;
     }
-    [data-testid="stSidebar"] button[kind="header"] {
+
+    [data-testid="stSidebarCollapsedControl"] > div,
+    [data-testid="collapsedControl"] > div {
         visibility: visible !important;
-        color: #C6A75E !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100% !important;
+        height: 100% !important;
     }
+
+    /* -------- STATE 2: Sidebar OPEN -------- */
+    [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"],
+    [data-testid="stSidebar"] button[data-testid="baseButton-headerNoPadding"],
+    [data-testid="stSidebar"] button[kind="headerNoPadding"] {
+
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+
+        width: 30px !important;
+        height: 30px !important;
+
+        background: transparent !important;
+        border: none !important;
+        border-radius: 6px !important;
+        box-shadow: none !important;
+        animation: none !important;
+        transform: none !important;
+
+        margin: 0 0 0.5rem 0 !important;
+        padding: 4px !important;
+
+        align-items: center !important;
+        justify-content: center !important;
+        display: flex !important;
+
+        transition: background 0.15s ease !important;
+    }
+
+    [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"]:hover,
+    [data-testid="stSidebar"] button[data-testid="baseButton-headerNoPadding"]:hover {
+        background: rgba(198,167,94,0.18) !important;
+    }
+
+    [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] svg,
+    [data-testid="stSidebar"] button[data-testid="baseButton-headerNoPadding"] svg {
+        fill: #C6A75E !important;
+        color: #C6A75E !important;
+        stroke: #C6A75E !important;
+        width: 18px !important;
+        height: 18px !important;
+    }
+
+    [data-testid="stSidebar"] {
+        z-index: 999998 !important;
+    }
+
     @media (max-width: 768px) {
-        [data-testid="stSidebar"] {
-            z-index: 999998 !important;
-        }
         [data-testid="stSidebar"] > div:first-child {
             padding-top: 1rem !important;
         }
@@ -170,9 +275,9 @@ st.markdown("""
        ========================================================= */
     .hero {
         background: var(--navy);
-        padding: 1.75rem 2rem;
+        padding: 1.6rem 1.9rem;
         border-radius: 12px;
-        margin-bottom: 1.5rem;
+        margin-bottom: 1.4rem;
         border-left: 4px solid var(--gold);
         box-shadow: 0 1px 3px rgba(31,42,68,0.08);
         display: flex;
@@ -186,15 +291,15 @@ st.markdown("""
     .hero h1 {
         color: #FFFFFF;
         margin: 0;
-        font-size: 1.6rem;
+        font-size: 1.4rem;       /* was 1.6rem → −1 */
         font-weight: 700;
         letter-spacing: -0.01em;
         line-height: 1.3;
     }
     .hero p {
         color: rgba(255,255,255,0.72);
-        margin: 0.4rem 0 0 0;
-        font-size: 0.95rem;
+        margin: 0.35rem 0 0 0;
+        font-size: 0.85rem;      /* was 0.95rem → −1 */
         font-weight: 400;
         letter-spacing: 0.005em;
     }
@@ -204,13 +309,13 @@ st.markdown("""
         gap: 0.4rem;
         background: rgba(198,167,94,0.15);
         color: var(--gold);
-        padding: 0.3rem 0.75rem;
+        padding: 0.28rem 0.7rem;
         border-radius: 4px;
-        font-size: 0.78rem;
+        font-size: 0.7rem;       /* was 0.78rem → −1 */
         font-weight: 600;
         letter-spacing: 0.06em;
         text-transform: uppercase;
-        margin-top: 0.9rem;
+        margin-top: 0.85rem;
         border: 1px solid rgba(198,167,94,0.35);
     }
     .hero .badge .dot {
@@ -221,8 +326,8 @@ st.markdown("""
 
     /* ---------- 3D Wireframe Cube ---------- */
     .hero-3d {
-        width: 130px;
-        height: 130px;
+        width: 120px;
+        height: 120px;
         perspective: 700px;
         opacity: 0.55;
         flex-shrink: 0;
@@ -262,8 +367,8 @@ st.markdown("""
     }
     @media (max-width: 768px) {
         .hero-3d { display: none; }
-        .hero { padding: 1.5rem 1.25rem; }
-        .hero h1 { font-size: 1.3rem; }
+        .hero { padding: 1.4rem 1.15rem; }
+        .hero h1 { font-size: 1.15rem; }
     }
 
     /* =========================================================
@@ -271,7 +376,7 @@ st.markdown("""
        ========================================================= */
     .metric-card {
         background: var(--white);
-        padding: 1.15rem 1.35rem;
+        padding: 1.05rem 1.25rem;
         border-radius: 10px;
         border: 1px solid var(--border);
         border-top: 3px solid var(--navy);
@@ -289,7 +394,7 @@ st.markdown("""
     .metric-card.accent-ok     { border-top-color: #059669; }
 
     .metric-label {
-        font-size: 0.8rem;
+        font-size: 0.72rem;      /* was 0.8rem → −1 */
         font-weight: 600;
         color: var(--muted);
         text-transform: uppercase;
@@ -297,10 +402,10 @@ st.markdown("""
         margin: 0;
     }
     .metric-value {
-        font-size: 1.75rem;
+        font-size: 1.55rem;      /* was 1.75rem → −1 */
         font-weight: 700;
         color: var(--ink);
-        margin: 0.45rem 0 0 0;
+        margin: 0.4rem 0 0 0;
         letter-spacing: -0.02em;
         line-height: 1.15;
         font-variant-numeric: tabular-nums;
@@ -313,8 +418,8 @@ st.markdown("""
 
     .metric-icon {
         display: inline-block;
-        font-size: 1.1rem;
-        margin-bottom: 0.4rem;
+        font-size: 1rem;         /* was 1.1rem → −1 */
+        margin-bottom: 0.35rem;
         opacity: 0.85;
     }
 
@@ -322,7 +427,7 @@ st.markdown("""
        SECTION HEADERS
        ========================================================= */
     .section-header {
-        font-size: 1.2rem;
+        font-size: 1.05rem;      /* was 1.2rem → −1 */
         font-weight: 700;
         color: var(--ink);
         margin: 0 0 0.3rem 0;
@@ -333,22 +438,22 @@ st.markdown("""
     }
     .section-sub {
         color: var(--muted);
-        font-size: 0.92rem;
-        margin: 0 0 1.25rem 0.75rem;
+        font-size: 0.82rem;      /* was 0.92rem → −1 */
+        margin: 0 0 1.1rem 0.75rem;
         font-weight: 400;
     }
 
     /* =========================================================
-       BUTTONS — with pulse on primary
+       BUTTONS
        ========================================================= */
     .stButton > button {
         background: var(--navy);
         color: #FFFFFF;
         border: 1px solid var(--navy);
         border-radius: 8px;
-        padding: 0.6rem 1.2rem;
+        padding: 0.55rem 1.1rem;
         font-weight: 600;
-        font-size: 0.92rem;
+        font-size: 0.83rem;      /* was 0.92rem → −1 */
         letter-spacing: 0.01em;
         transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
         box-shadow: 0 1px 2px rgba(31,42,68,0.06);
@@ -402,9 +507,9 @@ st.markdown("""
         color: var(--navy);
         border: 1px solid var(--gold-700);
         border-radius: 8px;
-        padding: 0.6rem 1.2rem;
+        padding: 0.55rem 1.1rem;
         font-weight: 600;
-        font-size: 0.92rem;
+        font-size: 0.83rem;      /* was 0.92rem → −1 */
         letter-spacing: 0.01em;
         box-shadow: 0 1px 2px rgba(31,42,68,0.06);
     }
@@ -422,8 +527,8 @@ st.markdown("""
         border-radius: 8px;
         border: 1px solid #D1D5DB;
         background: var(--white);
-        padding: 0.6rem 0.85rem;
-        font-size: 0.97rem;
+        padding: 0.55rem 0.8rem;
+        font-size: 0.88rem;      /* was 0.97rem → −1 */
         transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
     .stTextInput > div > div > input:focus,
@@ -434,13 +539,13 @@ st.markdown("""
     label, .stTextInput label, .stNumberInput label {
         font-weight: 600 !important;
         color: var(--ink) !important;
-        font-size: 0.88rem !important;
+        font-size: 0.8rem !important;   /* was 0.88rem → −1 */
         letter-spacing: 0.02em;
         text-transform: none;
     }
 
     /* =========================================================
-       INVENTORY HTML TABLE — Premium Look with Row Borders
+       INVENTORY HTML TABLE
        ========================================================= */
     .inv-table-wrap {
         max-height: 720px;
@@ -468,29 +573,27 @@ st.markdown("""
         background: var(--gold);
     }
 
-    /* ---------- Main Table ---------- */
     .inv-table {
         width: 100%;
         border-collapse: separate;
         border-spacing: 0;
-        font-size: 0.9rem;
+        font-size: 0.82rem;      /* was 0.9rem → −1 */
         background: var(--white);
         font-feature-settings: "tnum";
     }
 
-    /* ---------- Header ---------- */
     .inv-table thead th {
         position: sticky;
         top: 0;
         z-index: 5;
         background: var(--navy) !important;
         color: #FFFFFF !important;
-        font-size: 0.72rem !important;
+        font-size: 0.65rem !important;   /* was 0.72rem → −1 */
         font-weight: 700 !important;
         letter-spacing: 0.08em !important;
         text-transform: uppercase !important;
         text-align: left !important;
-        padding: 0.85rem 1rem !important;
+        padding: 0.75rem 0.9rem !important;
         border: none !important;
         border-bottom: 3px solid var(--gold) !important;
         white-space: nowrap;
@@ -507,12 +610,11 @@ st.markdown("""
         text-align: right !important;
     }
 
-    /* ---------- Body Cells (with row border) ---------- */
     .inv-table tbody td {
         color: var(--ink) !important;
-        font-size: 0.875rem !important;
+        font-size: 0.8rem !important;    /* was 0.875rem → −1 */
         font-weight: 500 !important;
-        padding: 0.75rem 1rem !important;
+        padding: 0.65rem 0.9rem !important;
         border: none !important;
         border-bottom: 1px solid #E5E7EB !important;
         vertical-align: middle;
@@ -521,10 +623,9 @@ st.markdown("""
         transition: background 0.12s ease;
     }
 
-    /* ---------- Column-Specific Styling ---------- */
     .inv-table tbody td:nth-child(1) {
         font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
-        font-size: 0.82rem !important;
+        font-size: 0.75rem !important;   /* was 0.82rem → −1 */
         font-weight: 600 !important;
         color: var(--navy) !important;
         letter-spacing: -0.01em;
@@ -536,41 +637,38 @@ st.markdown("""
     .inv-table tbody td:nth-child(3),
     .inv-table tbody td:nth-child(4) {
         color: var(--muted) !important;
-        font-size: 0.82rem !important;
+        font-size: 0.75rem !important;   /* was 0.82rem → −1 */
     }
     .inv-table tbody td:nth-child(5) {
         font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
-        font-size: 0.82rem !important;
+        font-size: 0.75rem !important;
         color: var(--muted) !important;
     }
     .inv-table tbody td:nth-child(6) {
         text-align: right !important;
         font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
         font-weight: 700 !important;
-        font-size: 0.9rem !important;
+        font-size: 0.82rem !important;   /* was 0.9rem → −1 */
         color: var(--navy) !important;
         font-variant-numeric: tabular-nums;
     }
     .inv-table tbody td:nth-child(7) {
         text-align: right !important;
         color: var(--muted) !important;
-        font-size: 0.78rem !important;
+        font-size: 0.72rem !important;   /* was 0.78rem → −1 */
         font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
     }
 
-    /* ---------- Zebra Stripes ---------- */
     .inv-table tbody tr:nth-child(even) td {
         background-color: #FAFBFD !important;
     }
 
-    /* ---------- Hover ---------- */
     .inv-table tbody tr:hover td {
         background-color: rgba(198,167,94,0.10) !important;
     }
 
-    /* ---------- Last Row — keep border ---------- */
     .inv-table tbody tr:last-child td {
         border-bottom: 1px solid #E5E7EB !important;
     }
@@ -581,15 +679,14 @@ st.markdown("""
         border-bottom-right-radius: 12px;
     }
 
-    /* ---------- Responsive ---------- */
     @media (max-width: 768px) {
         .inv-table thead th,
         .inv-table tbody td {
-            padding: 0.6rem 0.7rem !important;
-            font-size: 0.8rem !important;
+            padding: 0.55rem 0.65rem !important;
+            font-size: 0.75rem !important;
         }
         .inv-table thead th {
-            font-size: 0.68rem !important;
+            font-size: 0.62rem !important;
         }
     }
 
@@ -601,45 +698,12 @@ st.markdown("""
         border-right: 1px solid #16202F;
     }
     [data-testid="stSidebar"] * { color: #CBD5E1 !important; }
-    [data-testid="stSidebar"] .stMarkdown h2 {
-        color: #FFFFFF !important;
-        font-size: 1.15rem !important;
-        font-weight: 700 !important;
-        letter-spacing: 0.01em;
-        text-transform: none;
-        margin-top: 0.5rem !important;
-        margin-bottom: 0.75rem !important;
-    }
-    [data-testid="stSidebar"] .stMarkdown h3 {
-        color: #FFFFFF !important;
-        font-size: 0.88rem !important;
-        font-weight: 600 !important;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        margin-top: 1rem !important;
-        margin-bottom: 0.5rem !important;
-    }
-    [data-testid="stSidebar"] .stMarkdown p,
-    [data-testid="stSidebar"] .stMarkdown li {
-        font-size: 0.95rem !important;
-    }
-    [data-testid="stSidebar"] hr {
-        border-color: rgba(198,167,94,0.18);
-        margin: 1rem 0;
-    }
-    [data-testid="stSidebar"] .stSuccess {
-        background: rgba(198,167,94,0.12) !important;
-        border: 1px solid rgba(198,167,94,0.35) !important;
-        color: var(--cream) !important;
-        border-radius: 6px;
-        font-size: 0.88rem;
-    }
-    [data-testid="stSidebar"] .stCaption {
-        color: #94A3B8 !important;
-        font-size: 0.86rem !important;
+
+    [data-testid="stSidebar"] .stMarkdown {
+        margin-bottom: 0 !important;
     }
 
-    /* Sidebar radio nav — looks like a menu */
+    /* Sidebar radio nav — 0.92rem */
     [data-testid="stSidebar"] [role="radiogroup"] {
         gap: 0.15rem;
         display: flex;
@@ -651,7 +715,7 @@ st.markdown("""
         padding: 0.55rem 0.75rem;
         border-radius: 6px;
         cursor: pointer;
-        font-size: 0.95rem !important;
+        font-size: 0.92rem !important;   /* was 1rem → −1 */
         font-weight: 500 !important;
         color: #CBD5E1 !important;
         border-left: 3px solid transparent;
@@ -678,7 +742,7 @@ st.markdown("""
         border-radius: 8px;
         border: 1px solid var(--border);
         box-shadow: none;
-        font-size: 0.95rem;
+        font-size: 0.85rem;      /* was 0.95rem → −1 */
     }
 
     /* =========================================================
@@ -712,7 +776,7 @@ st.markdown("""
     }
 
     /* =========================================================
-       RESPONSIVE — Metric cards wrap nicely on mobile
+       RESPONSIVE
        ========================================================= */
     @media (max-width: 900px) {
         [data-testid="stHorizontalBlock"] {
@@ -727,20 +791,43 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-#  SIDEBAR — with clickable radio navigation
+#  SIDEBAR — Premium SaaS · fonts −1 step
 # =========================================================
 with st.sidebar:
-    st.markdown("## 📦 Inventory Hub")
-    st.markdown("---")
 
-    st.markdown("### Connection")
-    st.success("● MongoDB Atlas · Connected")
-    st.caption(f"Database: {ops.DB_NAME}")
-    st.caption(f"Collection: {ops.COLLECTION_NAME}")
+    # ---------- Brand header ----------
+    st.markdown(
+        '<div style="display:flex; align-items:center; gap:10px; '
+        'padding:4px 0 12px 0;">'
+        '<div style="width:34px; height:34px; border-radius:8px; '
+        'background:linear-gradient(135deg,#C6A75E,#A98A44); '
+        'display:flex; align-items:center; justify-content:center; '
+        'font-size:17px; flex-shrink:0;">📦</div>'
+        '<div style="min-width:0;">'
+        '<div style="font-size:0.9rem; font-weight:700; color:#FFFFFF; '
+        'letter-spacing:-0.01em; line-height:1.2;">Inventory Hub</div>'
+        '<div style="font-size:0.78rem; color:#94A3B8; '
+        'letter-spacing:0.02em; font-weight:500; line-height:1.3; '
+        'margin-top:2px;">AGT Inventory Management System</div>'
+        '</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 
-    st.markdown("---")
+    st.markdown(
+        '<hr style="border:none; border-top:1px solid rgba(198,167,94,0.18); '
+        'margin:8px 0 14px 0;">',
+        unsafe_allow_html=True,
+    )
 
-    st.markdown("### Navigation")
+    # ---------- Navigation ----------
+    st.markdown(
+        '<div style="font-size:0.78rem; color:#94A3B8; letter-spacing:0.12em; '
+        'text-transform:uppercase; font-weight:700; margin-bottom:8px; '
+        'padding-left:2px;">Menu</div>',
+        unsafe_allow_html=True,
+    )
+
     page = st.radio(
         label="Select section",
         options=[
@@ -754,13 +841,26 @@ with st.sidebar:
         key="nav_radio",
     )
 
-    st.markdown("---")
+    st.markdown(
+        '<hr style="border:none; border-top:1px solid rgba(198,167,94,0.18); '
+        'margin:16px 0 14px 0;">',
+        unsafe_allow_html=True,
+    )
 
-    st.markdown("### Session")
-    st.caption(f"Started: {datetime.now().strftime('%d-%b-%Y %H:%M')}")
-
-    st.markdown("---")
-    st.caption("© 2026 AGT Inventory System · by Kishan")
+    # ---------- Footer — single line, no wrap ----------
+    st.markdown(
+        '<div style="margin-top:18px; display:flex; align-items:center; '
+        'gap:7px; font-size:0.7rem; color:#94A3B8; '
+        'padding-left:2px; white-space:nowrap; overflow:hidden;">'
+        '<span style="width:6px; height:6px; border-radius:50%; '
+        'flex-shrink:0; '
+        'background:#22C55E; box-shadow:0 0 6px rgba(34,197,94,0.8);"></span>'
+        '<span style="flex-shrink:0;">Online</span>'
+        '<span style="opacity:0.4; flex-shrink:0;">·</span>'
+        '<span style="flex-shrink:0;">© 2026 AASHDHA GLOBAL TECH</span>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
 
 # =========================================================
 #  HERO HEADER
@@ -836,14 +936,14 @@ with c5:
     <div class="metric-card">
         <div class="metric-icon">🕐</div>
         <p class="metric-label">Last Checked</p>
-        <p class="metric-value" style="font-size:1.15rem;">{datetime.today().strftime('%d-%m-%Y %H:%M')}</p>
+        <p class="metric-value" style="font-size:1.05rem;">{datetime.today().strftime('%d-%m-%Y %H:%M')}</p>
     </div>
     """, unsafe_allow_html=True)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
 # =========================================================
-#  ROUTED CONTENT (driven by sidebar radio)
+#  ROUTED CONTENT
 # =========================================================
 
 # ---------------------------------------------------------
@@ -864,10 +964,9 @@ if page == "📤  Update from Excel":
     st.markdown("<br>", unsafe_allow_html=True)
 
     if st.button("🚀 Update Inventory", key="btn1", type="primary", use_container_width=True):
-        # 👑 VIP mode
         if password1.lower() == "kishan":
             st.success("👑 Welcome back, boss. You *are* the system.")
-        elif password1.lower() != "update":
+        elif password1.lower() != "updatek":
             st.error(funny(WRONG_PASSWORD_LINES))
             st.toast("🔐 Access denied!", icon="🚨")
         elif uploaded_file is None:
@@ -885,17 +984,14 @@ if page == "📤  Update from Excel":
                     progress = st.progress(0)
 
                     for index, row in df.iterrows():
-                        data = row.to_dict()
-
                         # ---------- Normalize fields ----------
-                        data["_id"]              = str(data["Item_code"]).strip()
-                        data["Item_code"]        = str(data["Item_code"]).strip()
-                        data["Item_name"]        = str(data.get("Item_name", "")).strip().upper()          # ← NEW
-                        data["Item_category"]    = str(data.get("Item_category", "")).strip().upper()      # ← NEW
-                        data["Item_subcategory"] = str(data.get("Item_subcategory", "")).strip().upper()   # ← NEW
-                        data["Quantity"]         = int(data["Quantity"])
-                        data["Updated_date"]     = datetime.today().strftime("%d-%m-%Y %H:%M:%S")
-
+                        data["_id"] = str(data["Item_code"]).strip()
+                        data["Item_code"] = str(data["Item_code"]).strip()
+                        data["Item_name"] = str(data.get("Item_name", "")).strip().upper()  # ← NEW
+                        data["Item_category"] = str(data.get("Item_category", "")).strip().upper()  # ← NEW
+                        data["Item_subcategory"] = str(data.get("Item_subcategory", "")).strip().upper()  # ← NEW
+                        data["Quantity"] = int(data["Quantity"])
+                        data["Updated_date"] = datetime.today().strftime("%d-%m-%Y %H:%M:%S")
                         try:
                             collection.insert_one(data)
                             inserted += 1
@@ -905,7 +1001,6 @@ if page == "📤  Update from Excel":
 
                     st.success(f"✅ Inventory updated — **{inserted}** items inserted, **{duplicates}** duplicates skipped.")
 
-                    # 🎉 Celebration tiers
                     if inserted >= 100:
                         st.balloons()
                         st.toast(f"🎊 {inserted} items in one go, Kishan! Legendary upload.", icon="🏆")
@@ -933,14 +1028,12 @@ elif page == "⚙️  Update by DN-60":
     st.markdown("<br>", unsafe_allow_html=True)
 
     if st.button("⚙️ Build Valves", key="btn2", type="primary", use_container_width=True):
-        # 👑 VIP mode
         if password2.lower() == "kishan":
             st.success("👑 Right away, boss. Building at your command.")
-        elif password2.lower() != "dn60":
+        elif password2.lower() != "dn60k":
             st.error(funny(WRONG_PASSWORD_LINES))
             st.toast("🔐 Access denied!", icon="🚨")
         else:
-            # 🎉 Big order reaction
             big_msg = big_order_message(dn60_count)
             if big_msg:
                 st.info(big_msg)
@@ -1019,7 +1112,6 @@ elif page == "📊  Check Production":
             max_valves    = min(limits.values())
             limiting_part = min(limits, key=limits.get)
 
-            # 😬 Sympathy toast if a part is completely out
             if available[limiting_part] == 0:
                 st.toast(funny(ZERO_STOCK_LINES), icon="😬")
 
@@ -1037,7 +1129,7 @@ elif page == "📊  Check Production":
                 <div class="metric-card accent-warn">
                     <div class="metric-icon">⚠️</div>
                     <p class="metric-label">Limiting Part</p>
-                    <p class="metric-value warn" style="font-size:1.15rem;">{part_names[limiting_part]}</p>
+                    <p class="metric-value warn" style="font-size:1.05rem;">{part_names[limiting_part]}</p>
                 </div>
                 """, unsafe_allow_html=True)
             with c3:
@@ -1158,7 +1250,6 @@ elif page == "🧮  Required Items":
 #  SECTION 5 — View current inventory + search + download
 # ---------------------------------------------------------
 elif page == "📋  View Inventory":
-    # ---------- Handle "Clear filters" BEFORE widgets render ----------
     if st.session_state.pop("clear_inv_filters", False):
         st.session_state["inv_search"] = ""
         st.session_state["inv_category"] = "All"
@@ -1167,7 +1258,6 @@ elif page == "📋  View Inventory":
     st.markdown('<div class="section-header">📋 Current Inventory Status</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-sub">View all items, search, filter and download as Excel.</div>', unsafe_allow_html=True)
 
-    # ---------- Load button (also acts as refresh) ----------
     col_load, col_info = st.columns([1, 3])
 
     with col_load:
@@ -1183,7 +1273,6 @@ elif page == "📋  View Inventory":
             cached_at = st.session_state.get("inv_loaded_at", "")
             st.caption(f"✔️ Data loaded · {cached_at}")
 
-    # ---------- Fetch and cache data ----------
     if load_clicked or "inv_data" not in st.session_state:
         try:
             data = list(collection.find({}, {
@@ -1209,7 +1298,6 @@ elif page == "📋  View Inventory":
             st.error(f"❌ Failed to load: {e}")
             st.stop()
 
-    # ---------- Render from cached data ----------
     df = st.session_state.get("inv_data")
     if df is None or df.empty:
         st.info("Click **🔄 Load Inventory** to fetch current stock.")
@@ -1217,11 +1305,8 @@ elif page == "📋  View Inventory":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # =============================================
-    #  🔍 SEARCH & FILTERS
-    # =============================================
     st.markdown(
-        '<div class="section-header" style="font-size:1.05rem; margin-bottom:0.5rem;">'
+        '<div class="section-header" style="font-size:0.95rem; margin-bottom:0.5rem;">'
         '🔍 Search & Filter</div>',
         unsafe_allow_html=True,
     )
@@ -1265,7 +1350,6 @@ elif page == "📋  View Inventory":
             key="inv_subcategory",
         )
 
-    # ---------- Apply filters ----------
     filtered = df.copy()
 
     if search_text.strip():
@@ -1282,7 +1366,6 @@ elif page == "📋  View Inventory":
     if selected_subcategory != "All":
         filtered = filtered[filtered["Item_subcategory"] == selected_subcategory]
 
-    # ---------- Result summary + clear button ----------
     sc1, sc2 = st.columns([4, 1])
 
     with sc1:
@@ -1300,7 +1383,6 @@ elif page == "📋  View Inventory":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ---------- Filtered table (premium HTML table) ----------
     if filtered.empty:
         st.info("🔍 No items match your search. Try different keywords or clear filters.")
     else:
@@ -1327,7 +1409,6 @@ elif page == "📋  View Inventory":
             unsafe_allow_html=True,
         )
 
-    # ---------- Download (respects filters) ----------
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
         filtered.to_excel(writer, index=False, sheet_name="Current Stock")
@@ -1353,7 +1434,7 @@ elif page == "📋  View Inventory":
         )
 
 # =========================================================
-#  🌙 LATE-NIGHT EASTER EGG (fires on every page)
+#  🌙 LATE-NIGHT EASTER EGG
 # =========================================================
 _late = late_night_message()
 if _late:
