@@ -2,7 +2,7 @@
 # ---------------------------------------------------------
 #  STREAMLIT WEB UI — Enterprise Dashboard
 #  Palette: #1F2A44 (Navy) · #E8DCC8 (Cream) · #C6A75E (Gold)
-#  v18: fonts reduced by 1 step · Premium SaaS sidebar
+#  v21: working green flash message · single-button stock adjust
 #  Built with ❤️ for Kishan
 # ---------------------------------------------------------
 import io
@@ -83,11 +83,10 @@ st.set_page_config(
 )
 
 # =========================================================
-#  CUSTOM CSS — Professional Enterprise Theme (Fonts −1 step)
+#  CUSTOM CSS — Professional Enterprise Theme
 # =========================================================
 st.markdown("""
 <style>
-    /* ---------- Professional Typeface ---------- */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
@@ -110,14 +109,11 @@ st.markdown("""
         font-feature-settings: "cv02","cv03","cv04","cv11";
         -webkit-font-smoothing: antialiased;
         color: var(--ink);
-        font-size: 15px;   /* was 16px → −1 */
+        font-size: 15px;
     }
 
     .stApp { background: #FAFAF7; }
 
-    /* =========================================================
-       HIDE STREAMLIT CHROME — KEEP SIDEBAR TOGGLE
-       ========================================================= */
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
 
@@ -142,37 +138,29 @@ st.markdown("""
         visibility: visible !important;
     }
 
-    /* -------- STATE 1: Sidebar CLOSED -------- */
     [data-testid="stSidebarCollapsedControl"],
     [data-testid="collapsedControl"] {
         visibility: visible !important;
         opacity: 1 !important;
         display: flex !important;
         pointer-events: auto !important;
-
         position: fixed !important;
         top: 70px !important;
         left: 0 !important;
         right: auto !important;
-
         width: 38px !important;
         height: 42px !important;
-
         background: #1F2A44 !important;
         border: 1.5px solid #C6A75E !important;
         border-left: none !important;
         border-radius: 0 10px 10px 0 !important;
-
         padding: 6px !important;
         margin: 0 !important;
-
         z-index: 2147483647 !important;
         box-shadow: 0 4px 14px rgba(31,42,68,0.5),
                     0 0 0 1px rgba(198,167,94,0.15) !important;
-
         align-items: center !important;
         justify-content: center !important;
-
         animation: toggle-pulse 3s ease-in-out infinite !important;
         transition: background 0.15s ease, transform 0.15s ease !important;
     }
@@ -210,33 +198,26 @@ st.markdown("""
         height: 100% !important;
     }
 
-    /* -------- STATE 2: Sidebar OPEN -------- */
     [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"],
     [data-testid="stSidebar"] button[data-testid="baseButton-headerNoPadding"],
     [data-testid="stSidebar"] button[kind="headerNoPadding"] {
-
         position: relative !important;
         top: auto !important;
         left: auto !important;
         right: auto !important;
-
         width: 30px !important;
         height: 30px !important;
-
         background: transparent !important;
         border: none !important;
         border-radius: 6px !important;
         box-shadow: none !important;
         animation: none !important;
         transform: none !important;
-
         margin: 0 0 0.5rem 0 !important;
         padding: 4px !important;
-
         align-items: center !important;
         justify-content: center !important;
         display: flex !important;
-
         transition: background 0.15s ease !important;
     }
 
@@ -254,14 +235,10 @@ st.markdown("""
         height: 18px !important;
     }
 
-    [data-testid="stSidebar"] {
-        z-index: 999998 !important;
-    }
+    [data-testid="stSidebar"] { z-index: 999998 !important; }
 
     @media (max-width: 768px) {
-        [data-testid="stSidebar"] > div:first-child {
-            padding-top: 1rem !important;
-        }
+        [data-testid="stSidebar"] > div:first-child { padding-top: 1rem !important; }
     }
 
     .block-container {
@@ -270,9 +247,7 @@ st.markdown("""
         max-width: 1400px;
     }
 
-    /* =========================================================
-       HERO
-       ========================================================= */
+    /* ============ HERO ============ */
     .hero {
         background: var(--navy);
         padding: 1.6rem 1.9rem;
@@ -289,63 +264,39 @@ st.markdown("""
     }
     .hero-content { position: relative; z-index: 2; min-width: 0; }
     .hero h1 {
-        color: #FFFFFF;
-        margin: 0;
-        font-size: 1.4rem;       /* was 1.6rem → −1 */
-        font-weight: 700;
-        letter-spacing: -0.01em;
-        line-height: 1.3;
+        color: #FFFFFF; margin: 0; font-size: 1.4rem;
+        font-weight: 700; letter-spacing: -0.01em; line-height: 1.3;
     }
     .hero p {
-        color: rgba(255,255,255,0.72);
-        margin: 0.35rem 0 0 0;
-        font-size: 0.85rem;      /* was 0.95rem → −1 */
-        font-weight: 400;
-        letter-spacing: 0.005em;
+        color: rgba(255,255,255,0.72); margin: 0.35rem 0 0 0;
+        font-size: 0.85rem; font-weight: 400; letter-spacing: 0.005em;
     }
     .hero .badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        background: rgba(198,167,94,0.15);
-        color: var(--gold);
-        padding: 0.28rem 0.7rem;
-        border-radius: 4px;
-        font-size: 0.7rem;       /* was 0.78rem → −1 */
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        background: rgba(198,167,94,0.15); color: var(--gold);
+        padding: 0.28rem 0.7rem; border-radius: 4px;
+        font-size: 0.7rem; font-weight: 600;
+        letter-spacing: 0.06em; text-transform: uppercase;
         margin-top: 0.85rem;
         border: 1px solid rgba(198,167,94,0.35);
     }
     .hero .badge .dot {
         width: 6px; height: 6px; border-radius: 50%;
-        background: #4ADE80;
-        box-shadow: 0 0 6px rgba(74,222,128,0.8);
+        background: #4ADE80; box-shadow: 0 0 6px rgba(74,222,128,0.8);
     }
 
-    /* ---------- 3D Wireframe Cube ---------- */
     .hero-3d {
-        width: 120px;
-        height: 120px;
-        perspective: 700px;
-        opacity: 0.55;
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        width: 120px; height: 120px; perspective: 700px;
+        opacity: 0.55; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
     }
     .hero-3d .cube {
-        position: relative;
-        width: 70px;
-        height: 70px;
+        position: relative; width: 70px; height: 70px;
         transform-style: preserve-3d;
         animation: hero-spin 24s linear infinite;
     }
     .hero-3d .cube .face {
-        position: absolute;
-        width: 70px;
-        height: 70px;
+        position: absolute; width: 70px; height: 70px;
         border: 1px solid rgba(198,167,94,0.7);
         background: rgba(198,167,94,0.05);
         box-shadow: inset 0 0 20px rgba(198,167,94,0.08);
@@ -371,9 +322,7 @@ st.markdown("""
         .hero h1 { font-size: 1.15rem; }
     }
 
-    /* =========================================================
-       METRIC CARDS
-       ========================================================= */
+    /* ============ METRIC CARDS ============ */
     .metric-card {
         background: var(--white);
         padding: 1.05rem 1.25rem;
@@ -394,21 +343,13 @@ st.markdown("""
     .metric-card.accent-ok     { border-top-color: #059669; }
 
     .metric-label {
-        font-size: 0.72rem;      /* was 0.8rem → −1 */
-        font-weight: 600;
-        color: var(--muted);
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        margin: 0;
+        font-size: 0.72rem; font-weight: 600; color: var(--muted);
+        text-transform: uppercase; letter-spacing: 0.06em; margin: 0;
     }
     .metric-value {
-        font-size: 1.55rem;      /* was 1.75rem → −1 */
-        font-weight: 700;
-        color: var(--ink);
-        margin: 0.4rem 0 0 0;
-        letter-spacing: -0.02em;
-        line-height: 1.15;
-        font-variant-numeric: tabular-nums;
+        font-size: 1.55rem; font-weight: 700; color: var(--ink);
+        margin: 0.4rem 0 0 0; letter-spacing: -0.02em;
+        line-height: 1.15; font-variant-numeric: tabular-nums;
     }
     .metric-value.primary { color: var(--navy); }
     .metric-value.gold    { color: var(--gold-700); }
@@ -417,43 +358,28 @@ st.markdown("""
     .metric-value.success { color: #047857; }
 
     .metric-icon {
-        display: inline-block;
-        font-size: 1rem;         /* was 1.1rem → −1 */
-        margin-bottom: 0.35rem;
-        opacity: 0.85;
+        display: inline-block; font-size: 1rem;
+        margin-bottom: 0.35rem; opacity: 0.85;
     }
 
-    /* =========================================================
-       SECTION HEADERS
-       ========================================================= */
+    /* ============ SECTION HEADERS ============ */
     .section-header {
-        font-size: 1.05rem;      /* was 1.2rem → −1 */
-        font-weight: 700;
-        color: var(--ink);
-        margin: 0 0 0.3rem 0;
-        letter-spacing: -0.01em;
-        padding-left: 0.75rem;
-        border-left: 3px solid var(--gold);
+        font-size: 1.05rem; font-weight: 700; color: var(--ink);
+        margin: 0 0 0.3rem 0; letter-spacing: -0.01em;
+        padding-left: 0.75rem; border-left: 3px solid var(--gold);
         line-height: 1.3;
     }
     .section-sub {
-        color: var(--muted);
-        font-size: 0.82rem;      /* was 0.92rem → −1 */
-        margin: 0 0 1.1rem 0.75rem;
-        font-weight: 400;
+        color: var(--muted); font-size: 0.82rem;
+        margin: 0 0 1.1rem 0.75rem; font-weight: 400;
     }
 
-    /* =========================================================
-       BUTTONS
-       ========================================================= */
+    /* ============ BUTTONS ============ */
     .stButton > button {
-        background: var(--navy);
-        color: #FFFFFF;
-        border: 1px solid var(--navy);
-        border-radius: 8px;
+        background: var(--navy); color: #FFFFFF;
+        border: 1px solid var(--navy); border-radius: 8px;
         padding: 0.55rem 1.1rem;
-        font-weight: 600;
-        font-size: 0.83rem;      /* was 0.92rem → −1 */
+        font-weight: 600; font-size: 0.83rem;
         letter-spacing: 0.01em;
         transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
         box-shadow: 0 1px 2px rgba(31,42,68,0.06);
@@ -480,18 +406,9 @@ st.markdown("""
     }
 
     @keyframes btn-pulse {
-        0% {
-            box-shadow: 0 1px 2px rgba(31,42,68,0.06),
-                        0 0 0 0 rgba(198,167,94,0.55);
-        }
-        70% {
-            box-shadow: 0 1px 2px rgba(31,42,68,0.06),
-                        0 0 0 10px rgba(198,167,94,0);
-        }
-        100% {
-            box-shadow: 0 1px 2px rgba(31,42,68,0.06),
-                        0 0 0 0 rgba(198,167,94,0);
-        }
+        0%   { box-shadow: 0 1px 2px rgba(31,42,68,0.06), 0 0 0 0 rgba(198,167,94,0.55); }
+        70%  { box-shadow: 0 1px 2px rgba(31,42,68,0.06), 0 0 0 10px rgba(198,167,94,0); }
+        100% { box-shadow: 0 1px 2px rgba(31,42,68,0.06), 0 0 0 0 rgba(198,167,94,0); }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -501,34 +418,24 @@ st.markdown("""
         }
     }
 
-    /* ---------- Download button ---------- */
     .stDownloadButton > button {
-        background: var(--gold);
-        color: var(--navy);
-        border: 1px solid var(--gold-700);
-        border-radius: 8px;
-        padding: 0.55rem 1.1rem;
-        font-weight: 600;
-        font-size: 0.83rem;      /* was 0.92rem → −1 */
+        background: var(--gold); color: var(--navy);
+        border: 1px solid var(--gold-700); border-radius: 8px;
+        padding: 0.55rem 1.1rem; font-weight: 600; font-size: 0.83rem;
         letter-spacing: 0.01em;
         box-shadow: 0 1px 2px rgba(31,42,68,0.06);
     }
     .stDownloadButton > button:hover {
-        background: var(--gold-700);
-        color: #FFFFFF;
+        background: var(--gold-700); color: #FFFFFF;
         border-color: var(--gold-700);
     }
 
-    /* =========================================================
-       INPUTS
-       ========================================================= */
+    /* ============ INPUTS ============ */
     .stTextInput > div > div > input,
     .stNumberInput > div > div > input {
-        border-radius: 8px;
-        border: 1px solid #D1D5DB;
-        background: var(--white);
-        padding: 0.55rem 0.8rem;
-        font-size: 0.88rem;      /* was 0.97rem → −1 */
+        border-radius: 8px; border: 1px solid #D1D5DB;
+        background: var(--white); padding: 0.55rem 0.8rem;
+        font-size: 0.88rem;
         transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
     .stTextInput > div > div > input:focus,
@@ -537,58 +444,44 @@ st.markdown("""
         box-shadow: 0 0 0 3px rgba(198,167,94,0.18);
     }
     label, .stTextInput label, .stNumberInput label {
-        font-weight: 600 !important;
-        color: var(--ink) !important;
-        font-size: 0.8rem !important;   /* was 0.88rem → −1 */
-        letter-spacing: 0.02em;
+        font-weight: 600 !important; color: var(--ink) !important;
+        font-size: 0.8rem !important; letter-spacing: 0.02em;
         text-transform: none;
     }
 
-    /* =========================================================
-       INVENTORY HTML TABLE
-       ========================================================= */
+    /* Hide number input +/- steppers */
+    .stNumberInput button[data-testid="stNumberInputStepUp"],
+    .stNumberInput button[data-testid="stNumberInputStepDown"],
+    .stNumberInput div[data-baseweb="input"] button {
+        display: none !important;
+    }
+
+    /* ============ INVENTORY HTML TABLE ============ */
     .inv-table-wrap {
-        max-height: 720px;
-        overflow-y: auto;
-        overflow-x: auto;
-        border-radius: 12px;
-        border: 1px solid var(--border);
+        max-height: 720px; overflow-y: auto; overflow-x: auto;
+        border-radius: 12px; border: 1px solid var(--border);
         background: var(--white);
         box-shadow: 0 4px 16px -8px rgba(31,42,68,0.12);
     }
-    .inv-table-wrap::-webkit-scrollbar {
-        width: 10px;
-        height: 10px;
-    }
-    .inv-table-wrap::-webkit-scrollbar-track {
-        background: #F7F8FA;
-        border-radius: 10px;
-    }
+    .inv-table-wrap::-webkit-scrollbar { width: 10px; height: 10px; }
+    .inv-table-wrap::-webkit-scrollbar-track { background: #F7F8FA; border-radius: 10px; }
     .inv-table-wrap::-webkit-scrollbar-thumb {
-        background: #D1D5DB;
-        border-radius: 10px;
+        background: #D1D5DB; border-radius: 10px;
         border: 2px solid #F7F8FA;
     }
-    .inv-table-wrap::-webkit-scrollbar-thumb:hover {
-        background: var(--gold);
-    }
+    .inv-table-wrap::-webkit-scrollbar-thumb:hover { background: var(--gold); }
 
     .inv-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-        font-size: 0.82rem;      /* was 0.9rem → −1 */
-        background: var(--white);
+        width: 100%; border-collapse: separate; border-spacing: 0;
+        font-size: 0.82rem; background: var(--white);
         font-feature-settings: "tnum";
     }
 
     .inv-table thead th {
-        position: sticky;
-        top: 0;
-        z-index: 5;
+        position: sticky; top: 0; z-index: 5;
         background: var(--navy) !important;
         color: #FFFFFF !important;
-        font-size: 0.65rem !important;   /* was 0.72rem → −1 */
+        font-size: 0.65rem !important;
         font-weight: 700 !important;
         letter-spacing: 0.08em !important;
         text-transform: uppercase !important;
@@ -596,206 +489,121 @@ st.markdown("""
         padding: 0.75rem 0.9rem !important;
         border: none !important;
         border-bottom: 3px solid var(--gold) !important;
-        white-space: nowrap;
-        user-select: none;
+        white-space: nowrap; user-select: none;
     }
-    .inv-table thead th:first-child {
-        border-top-left-radius: 12px;
-    }
-    .inv-table thead th:last-child {
-        border-top-right-radius: 12px;
-    }
+    .inv-table thead th:first-child { border-top-left-radius: 12px; }
+    .inv-table thead th:last-child  { border-top-right-radius: 12px; }
     .inv-table thead th:nth-child(6),
-    .inv-table thead th:nth-child(7) {
-        text-align: right !important;
-    }
+    .inv-table thead th:nth-child(7) { text-align: right !important; }
 
     .inv-table tbody td {
         color: var(--ink) !important;
-        font-size: 0.8rem !important;    /* was 0.875rem → −1 */
+        font-size: 0.8rem !important;
         font-weight: 500 !important;
         padding: 0.65rem 0.9rem !important;
         border: none !important;
         border-bottom: 1px solid #E5E7EB !important;
-        vertical-align: middle;
-        line-height: 1.4;
+        vertical-align: middle; line-height: 1.4;
         background: transparent;
         transition: background 0.12s ease;
     }
-
     .inv-table tbody td:nth-child(1) {
         font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
-        font-size: 0.75rem !important;   /* was 0.82rem → −1 */
-        font-weight: 600 !important;
-        color: var(--navy) !important;
-        letter-spacing: -0.01em;
+        font-size: 0.75rem !important; font-weight: 600 !important;
+        color: var(--navy) !important; letter-spacing: -0.01em;
     }
-    .inv-table tbody td:nth-child(2) {
-        font-weight: 600 !important;
-        color: var(--ink) !important;
-    }
+    .inv-table tbody td:nth-child(2) { font-weight: 600 !important; color: var(--ink) !important; }
     .inv-table tbody td:nth-child(3),
     .inv-table tbody td:nth-child(4) {
-        color: var(--muted) !important;
-        font-size: 0.75rem !important;   /* was 0.82rem → −1 */
+        color: var(--muted) !important; font-size: 0.75rem !important;
     }
     .inv-table tbody td:nth-child(5) {
         font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
-        font-size: 0.75rem !important;
-        color: var(--muted) !important;
+        font-size: 0.75rem !important; color: var(--muted) !important;
     }
     .inv-table tbody td:nth-child(6) {
         text-align: right !important;
         font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
-        font-weight: 700 !important;
-        font-size: 0.82rem !important;   /* was 0.9rem → −1 */
+        font-weight: 700 !important; font-size: 0.82rem !important;
         color: var(--navy) !important;
         font-variant-numeric: tabular-nums;
     }
     .inv-table tbody td:nth-child(7) {
-        text-align: right !important;
-        color: var(--muted) !important;
-        font-size: 0.72rem !important;   /* was 0.78rem → −1 */
+        text-align: right !important; color: var(--muted) !important;
+        font-size: 0.72rem !important;
         font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
-        font-variant-numeric: tabular-nums;
-        white-space: nowrap;
+        font-variant-numeric: tabular-nums; white-space: nowrap;
     }
 
-    .inv-table tbody tr:nth-child(even) td {
-        background-color: #FAFBFD !important;
-    }
-
-    .inv-table tbody tr:hover td {
-        background-color: rgba(198,167,94,0.10) !important;
-    }
-
-    .inv-table tbody tr:last-child td {
-        border-bottom: 1px solid #E5E7EB !important;
-    }
-    .inv-table tbody tr:last-child td:first-child {
-        border-bottom-left-radius: 12px;
-    }
-    .inv-table tbody tr:last-child td:last-child {
-        border-bottom-right-radius: 12px;
-    }
+    .inv-table tbody tr:nth-child(even) td { background-color: #FAFBFD !important; }
+    .inv-table tbody tr:hover td { background-color: rgba(198,167,94,0.10) !important; }
+    .inv-table tbody tr:last-child td { border-bottom: 1px solid #E5E7EB !important; }
+    .inv-table tbody tr:last-child td:first-child { border-bottom-left-radius: 12px; }
+    .inv-table tbody tr:last-child td:last-child  { border-bottom-right-radius: 12px; }
 
     @media (max-width: 768px) {
-        .inv-table thead th,
-        .inv-table tbody td {
+        .inv-table thead th, .inv-table tbody td {
             padding: 0.55rem 0.65rem !important;
             font-size: 0.75rem !important;
         }
-        .inv-table thead th {
-            font-size: 0.62rem !important;
-        }
+        .inv-table thead th { font-size: 0.62rem !important; }
     }
 
-    /* =========================================================
-       SIDEBAR
-       ========================================================= */
-    [data-testid="stSidebar"] {
-        background: var(--navy);
-        border-right: 1px solid #16202F;
-    }
+    /* ============ SIDEBAR ============ */
+    [data-testid="stSidebar"] { background: var(--navy); border-right: 1px solid #16202F; }
     [data-testid="stSidebar"] * { color: #CBD5E1 !important; }
+    [data-testid="stSidebar"] .stMarkdown { margin-bottom: 0 !important; }
 
-    [data-testid="stSidebar"] .stMarkdown {
-        margin-bottom: 0 !important;
-    }
-
-    /* Sidebar radio nav — 0.92rem */
     [data-testid="stSidebar"] [role="radiogroup"] {
-        gap: 0.15rem;
-        display: flex;
-        flex-direction: column;
+        gap: 0.15rem; display: flex; flex-direction: column;
     }
     [data-testid="stSidebar"] [role="radiogroup"] label {
-        display: flex;
-        align-items: center;
-        padding: 0.55rem 0.75rem;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 0.92rem !important;   /* was 1rem → −1 */
-        font-weight: 500 !important;
-        color: #CBD5E1 !important;
+        display: flex; align-items: center;
+        padding: 0.55rem 0.75rem; border-radius: 6px;
+        cursor: pointer; font-size: 0.92rem !important;
+        font-weight: 500 !important; color: #CBD5E1 !important;
         border-left: 3px solid transparent;
         transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
     }
     [data-testid="stSidebar"] [role="radiogroup"] label:hover {
-        background: rgba(198,167,94,0.10);
-        color: #FFFFFF !important;
+        background: rgba(198,167,94,0.10); color: #FFFFFF !important;
     }
-    [data-testid="stSidebar"] [role="radiogroup"] label > div:first-child {
-        display: none;
-    }
+    [data-testid="stSidebar"] [role="radiogroup"] label > div:first-child { display: none; }
     [data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) {
-        background: rgba(198,167,94,0.16);
-        color: #FFFFFF !important;
-        border-left-color: var(--gold);
-        font-weight: 600 !important;
+        background: rgba(198,167,94,0.16); color: #FFFFFF !important;
+        border-left-color: var(--gold); font-weight: 600 !important;
     }
 
-    /* =========================================================
-       ALERTS
-       ========================================================= */
     .stAlert {
-        border-radius: 8px;
-        border: 1px solid var(--border);
-        box-shadow: none;
-        font-size: 0.85rem;      /* was 0.95rem → −1 */
+        border-radius: 8px; border: 1px solid var(--border);
+        box-shadow: none; font-size: 0.85rem;
     }
 
-    /* =========================================================
-       FILE UPLOADER
-       ========================================================= */
     [data-testid="stFileUploader"] { border-radius: 8px; }
     [data-testid="stFileUploader"] section {
-        border-radius: 8px;
-        border: 1.5px dashed #D1D5DB;
-        background: var(--white);
-        transition: border-color 0.15s ease;
+        border-radius: 8px; border: 1.5px dashed #D1D5DB;
+        background: var(--white); transition: border-color 0.15s ease;
     }
-    [data-testid="stFileUploader"] section:hover {
-        border-color: var(--gold);
-    }
+    [data-testid="stFileUploader"] section:hover { border-color: var(--gold); }
 
-    /* =========================================================
-       PROGRESS BAR
-       ========================================================= */
-    .stProgress > div > div > div > div {
-        background: var(--gold);
-    }
+    .stProgress > div > div > div > div { background: var(--gold); }
 
-    /* =========================================================
-       DIVIDERS
-       ========================================================= */
-    hr {
-        border: none;
-        border-top: 1px solid var(--border);
-        margin: 1.5rem 0;
-    }
+    hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
 
-    /* =========================================================
-       RESPONSIVE
-       ========================================================= */
     @media (max-width: 900px) {
-        [data-testid="stHorizontalBlock"] {
-            flex-wrap: wrap;
-        }
+        [data-testid="stHorizontalBlock"] { flex-wrap: wrap; }
         [data-testid="stHorizontalBlock"] > div[data-testid="column"] {
-            min-width: 45% !important;
-            flex: 1 1 45% !important;
+            min-width: 45% !important; flex: 1 1 45% !important;
         }
     }
 </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-#  SIDEBAR — Premium SaaS · fonts −1 step
+#  SIDEBAR
 # =========================================================
 with st.sidebar:
 
-    # ---------- Brand header ----------
     st.markdown(
         '<div style="display:flex; align-items:center; gap:10px; '
         'padding:4px 0 12px 0;">'
@@ -820,7 +628,6 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    # ---------- Navigation ----------
     st.markdown(
         '<div style="font-size:0.78rem; color:#94A3B8; letter-spacing:0.12em; '
         'text-transform:uppercase; font-weight:700; margin-bottom:8px; '
@@ -831,11 +638,11 @@ with st.sidebar:
     page = st.radio(
         label="Select section",
         options=[
+            "📋  View Inventory",
             "📤  Update from Excel",
             "⚙️  Update by DN-60",
             "📊  Check Production",
             "🧮  Required Items",
-            "📋  View Inventory",
         ],
         label_visibility="collapsed",
         key="nav_radio",
@@ -847,7 +654,6 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-    # ---------- Footer — single line, no wrap ----------
     st.markdown(
         '<div style="margin-top:18px; display:flex; align-items:center; '
         'gap:7px; font-size:0.7rem; color:#94A3B8; '
@@ -985,12 +791,11 @@ if page == "📤  Update from Excel":
 
                     for index, row in df.iterrows():
                         data = row.to_dict()
-                        # ---------- Normalize fields ----------
                         data["_id"] = str(data["Item_code"]).strip()
                         data["Item_code"] = str(data["Item_code"]).strip()
-                        data["Item_name"] = str(data.get("Item_name", "")).strip().upper()  # ← NEW
-                        data["Item_category"] = str(data.get("Item_category", "")).strip().upper()  # ← NEW
-                        data["Item_subcategory"] = str(data.get("Item_subcategory", "")).strip().upper()  # ← NEW
+                        data["Item_name"] = str(data.get("Item_name", "")).strip().upper()
+                        data["Item_category"] = str(data.get("Item_category", "")).strip().upper()
+                        data["Item_subcategory"] = str(data.get("Item_subcategory", "")).strip().upper()
                         data["Quantity"] = int(data["Quantity"])
                         data["Updated_date"] = datetime.today().strftime("%d-%m-%Y %H:%M:%S")
                         try:
@@ -1248,16 +1053,13 @@ elif page == "🧮  Required Items":
             st.error(f"❌ Error: {e}")
 
 # ---------------------------------------------------------
-#  SECTION 5 — View current inventory + search + download
+#  SECTION 5 — View current inventory + search + download + adjust
 # ---------------------------------------------------------
 elif page == "📋  View Inventory":
     if st.session_state.pop("clear_inv_filters", False):
         st.session_state["inv_search"] = ""
         st.session_state["inv_category"] = "All"
         st.session_state["inv_subcategory"] = "All"
-
-    st.markdown('<div class="section-header">📋 Current Inventory Status</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">View all items, search, filter and download as Excel.</div>', unsafe_allow_html=True)
 
     col_load, col_info = st.columns([1, 3])
 
@@ -1306,6 +1108,9 @@ elif page == "📋  View Inventory":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # ==========================================
+    #  🔍 SEARCH & FILTER
+    # ==========================================
     st.markdown(
         '<div class="section-header" style="font-size:0.95rem; margin-bottom:0.5rem;">'
         '🔍 Search & Filter</div>',
@@ -1384,18 +1189,27 @@ elif page == "📋  View Inventory":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # ---------- Table ----------
     if filtered.empty:
         st.info("🔍 No items match your search. Try different keywords or clear filters.")
     else:
-        display_df = filtered.fillna("—").astype(str).replace("None", "—")
+        display_df = filtered.copy()
+        display_df = display_df.fillna("—")
+        display_df = display_df.astype(str).replace({
+            "nan": "—", "NaN": "—", "NAN": "—",
+            "None": "—", "none": "—",
+            "null": "—", "NULL": "—",
+            "NaT": "—", "": "—",
+        })
+
         display_df = display_df.rename(columns={
-            "Item_code":        "Code",
-            "Item_name":        "Item Name",
-            "Item_category":    "Category",
+            "Item_code": "Code",
+            "Item_name": "Item Name",
+            "Item_category": "Category",
             "Item_subcategory": "Subcategory",
-            "Location":         "Location",
-            "Quantity":         "Qty",
-            "Updated_date":     "Updated",
+            "Location": "Location",
+            "Quantity": "Qty",
+            "Updated_date": "Updated",
         })
 
         html_table = display_df.to_html(
@@ -1410,6 +1224,209 @@ elif page == "📋  View Inventory":
             unsafe_allow_html=True,
         )
 
+    # ==========================================
+    #  ⚡ QUICK STOCK ADJUSTMENT
+    # ==========================================
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-header" style="font-size:0.95rem; margin-bottom:0.5rem;">'
+        '⚡ Quick Stock Adjustment</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="section-sub" style="margin-bottom:0.9rem;">'
+        'Set the current stock for any item — password same as Excel update.</div>',
+        unsafe_allow_html=True,
+    )
+
+    # ---------- FLASH MESSAGE (renders after rerun) ----------
+    _flash = st.session_state.pop("adj_flash", None)
+    if _flash:
+        if _flash["status"] == "ok":
+            st.markdown(
+                f"""
+                <div style="
+                    background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
+                    border: 1.5px solid #059669;
+                    border-left: 5px solid #047857;
+                    border-radius: 10px;
+                    padding: 0.9rem 1.15rem;
+                    margin: 0.3rem 0 1rem 0;
+                    box-shadow: 0 2px 8px -2px rgba(5,150,105,0.25);
+                    font-family: 'Inter', sans-serif;
+                ">
+                    <div style="
+                        display: flex; align-items: center; gap: 0.5rem;
+                        font-weight: 700; color: #065F46;
+                        font-size: 0.95rem; margin-bottom: 0.35rem;
+                    ">
+                        <span style="font-size:1.1rem;">✅</span>
+                        Stock Updated Successfully
+                    </div>
+                    <div style="
+                        color: #047857; font-size: 0.88rem; line-height: 1.55;
+                    ">
+                        <span style="
+                            font-family: 'JetBrains Mono', monospace;
+                            background: rgba(5,150,105,0.12);
+                            padding: 2px 8px; border-radius: 5px;
+                            font-weight: 700; color: #065F46;
+                        ">{_flash['code']}</span>
+                        &nbsp;—&nbsp;
+                        <strong style="color: #065F46;">{_flash['name']}</strong>
+                        <br>
+                        <span style="opacity: 0.85;">
+                            Quantity:
+                            <strong>{_flash['old']}</strong>
+                            &nbsp;→&nbsp;
+                            <strong style="color:#047857;">{_flash['new']}</strong>
+                            &nbsp;
+                            <span style="
+                                background: rgba(5,150,105,0.18);
+                                padding: 1px 7px; border-radius: 4px;
+                                font-family: 'JetBrains Mono', monospace;
+                                font-weight: 700;
+                            ">{_flash['diff']}</span>
+                        </span>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        else:
+            st.markdown(
+                f"""
+                <div style="
+                    background: #EFF6FF; border: 1.5px solid #3B82F6;
+                    border-left: 5px solid #1D4ED8; border-radius: 10px;
+                    padding: 0.85rem 1.1rem; margin: 0.3rem 0 1rem 0;
+                    color: #1E40AF; font-weight: 600; font-size: 0.88rem;
+                    font-family: 'Inter', sans-serif;
+                ">
+                    ℹ️ No change — <code>{_flash['code']}</code>
+                    is still <strong>{_flash['new']}</strong>.
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+    # ---------- Flash for errors too ----------
+    _flash_err = st.session_state.pop("adj_flash_err", None)
+    if _flash_err:
+        st.markdown(
+            f"""
+            <div style="
+                background: linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%);
+                border: 1.5px solid #DC2626;
+                border-left: 5px solid #B91C1C;
+                border-radius: 10px;
+                padding: 0.85rem 1.1rem; margin: 0.3rem 0 1rem 0;
+                color: #991B1B; font-weight: 600; font-size: 0.88rem;
+                font-family: 'Inter', sans-serif;
+            ">
+                🚨 {_flash_err}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    if not filtered.empty:
+        adj_c1, adj_c2, adj_c3 = st.columns([1.2, 3, 1.2])
+
+        with adj_c1:
+            adj_pwd = st.text_input(
+                "🔒 Password",
+                type="password",
+                key="adj_pwd",
+                placeholder="Password",
+            )
+
+        with adj_c2:
+            adj_item = st.selectbox(
+                "Item",
+                options=["— Select item —"] + filtered["Item_code"].astype(str).tolist(),
+                key="adj_item",
+            )
+
+        # ---- Fetch current stock of selected item ----
+        if adj_item != "— Select item —":
+            _doc = collection.find_one({"Item_code": adj_item})
+            _current_qty = int(_doc.get("Quantity", 0)) if _doc else 0
+        else:
+            _current_qty = 0
+
+        with adj_c3:
+            adj_new_qty = st.number_input(
+                "Current Stock",
+                min_value=0,
+                max_value=10_000_000,
+                value=_current_qty,
+                step=1,
+                key=f"adj_new_qty_{adj_item}",
+            )
+
+        st.markdown("<div style='height:0.4rem;'></div>", unsafe_allow_html=True)
+
+        save_clicked = st.button(
+            "💾 Update Stock",
+            key="adj_save",
+            type="primary",
+            use_container_width=True,
+        )
+
+        if save_clicked:
+            if adj_pwd.lower() not in ("updatek", "kishan"):
+                # Save error to flash
+                st.session_state["adj_flash_err"] = funny(WRONG_PASSWORD_LINES)
+                st.session_state.pop("inv_data", None)
+                st.rerun()
+
+            elif adj_item == "— Select item —":
+                st.session_state["adj_flash_err"] = "Please select an item first."
+                st.session_state.pop("inv_data", None)
+                st.rerun()
+
+            else:
+                doc = collection.find_one({"Item_code": adj_item})
+                if not doc:
+                    st.session_state["adj_flash_err"] = f"Item {adj_item} not found in DB."
+                    st.session_state.pop("inv_data", None)
+                    st.rerun()
+                else:
+                    old_qty = int(doc.get("Quantity", 0))
+                    new_qty = int(adj_new_qty)
+                    item_name = doc.get("Item_name", "")
+
+                    collection.update_one(
+                        {"Item_code": adj_item},
+                        {"$set": {
+                            "Quantity": new_qty,
+                            "Updated_date": datetime.today().strftime("%d-%m-%Y %H:%M:%S"),
+                        }}
+                    )
+
+                    if new_qty > old_qty:
+                        diff_txt = f"+{new_qty - old_qty}"
+                    elif new_qty < old_qty:
+                        diff_txt = f"{new_qty - old_qty}"
+                    else:
+                        diff_txt = "±0"
+
+                    st.session_state["adj_flash"] = {
+                        "code": adj_item,
+                        "name": item_name,
+                        "old": old_qty,
+                        "new": new_qty,
+                        "diff": diff_txt,
+                        "status": "ok" if new_qty != old_qty else "same",
+                    }
+
+                    st.session_state.pop("inv_data", None)
+                    st.rerun()
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ---------- Download ----------
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
         filtered.to_excel(writer, index=False, sheet_name="Current Stock")
