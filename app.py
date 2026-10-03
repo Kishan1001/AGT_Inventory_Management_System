@@ -1117,17 +1117,19 @@ elif page == "📋  View Inventory":
         unsafe_allow_html=True,
     )
 
-    search_text = st.text_input(
-        "Search by Item Name or Code",
-        placeholder="🔎 Try: O-RING, BOLT, CIRCLIP, or a code like 94181553L",
-        key="inv_search",
-        help="Case-insensitive · partial match · searches both name and code",
-        label_visibility="collapsed",
-    )
-
-    fc1, fc2, fc3 = st.columns([1, 1, 2])
+    # ---------- One-line row: Search | Category | Subcategory ----------
+    fc1, fc2, fc3 = st.columns([3, 1, 1])
 
     with fc1:
+        search_text = st.text_input(
+            "Search",
+            placeholder="🔎 Try: O-RING, BOLT, CIRCLIP, or a code like 94181553L",
+            key="inv_search",
+            help="Case-insensitive · partial match · searches both name and code",
+            label_visibility="collapsed",
+        )
+
+    with fc2:
         category_opts = ["All"] + sorted(
             [c for c in df["Item_category"].dropna().unique().tolist() if str(c).strip()]
         )
@@ -1137,9 +1139,10 @@ elif page == "📋  View Inventory":
             "Category",
             options=category_opts,
             key="inv_category",
+            label_visibility="collapsed",
         )
 
-    with fc2:
+    with fc3:
         if selected_category == "All":
             sub_pool = df["Item_subcategory"].dropna().unique().tolist()
         else:
@@ -1154,6 +1157,7 @@ elif page == "📋  View Inventory":
             "Subcategory",
             options=subcategory_opts,
             key="inv_subcategory",
+            label_visibility="collapsed",
         )
 
     filtered = df.copy()
@@ -1426,26 +1430,26 @@ elif page == "📋  View Inventory":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ---------- Download ----------
+    # ---------- Download — ALWAYS FULL INVENTORY ----------
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
-        filtered.to_excel(writer, index=False, sheet_name="Current Stock")
+        df.to_excel(writer, index=False, sheet_name="Current Stock")
 
     timestamp = datetime.today().strftime("%d-%m-%Y__%H-%M")
 
-    if filtered.empty:
+    if df.empty:
         st.button(
             "📥 Download as Excel",
             disabled=True,
             use_container_width=True,
             key="dl5_disabled",
-            help="Nothing to download — no items match your filters.",
+            help="Nothing to download — inventory is empty.",
         )
     else:
         st.download_button(
-            label=f"📥 Download {len(filtered)} filtered item(s) as Excel",
+            label=f"📥 Download Full Inventory ({len(df)} items) as Excel",
             data=buffer.getvalue(),
-            file_name=f"agt_inventory_{timestamp}.xlsx",
+            file_name=f"agt_full_inventory_{timestamp}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             key="dl5",
             use_container_width=True,
