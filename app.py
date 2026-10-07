@@ -2,12 +2,12 @@
 # ---------------------------------------------------------
 #  STREAMLIT WEB UI — Enterprise Dashboard
 #  Palette: #1F2A44 (Navy) · #E8DCC8 (Cream) · #C6A75E (Gold)
-#  v21: working green flash message · single-button stock adjust
+#  v24: per-part low-stock thresholds · IST · clean tables
 #  Built with ❤️ for Kishan
 # ---------------------------------------------------------
 import io
 import random
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 import streamlit as st
@@ -19,6 +19,45 @@ from inventory_ops import (
     download_excel_data,
     close_connection,
 )
+
+# =========================================================
+#  🕐 TIMEZONE — India Standard Time (UTC + 5:30)
+# =========================================================
+IST = timezone(timedelta(hours=5, minutes=30))
+
+
+def now_ist():
+    """Return current time in IST (Asia/Kolkata)."""
+    return datetime.now(IST)
+
+
+# =========================================================
+#  ⚠️ LOW STOCK THRESHOLDS
+#  Default = 100 · Per-part overrides below
+# =========================================================
+DEFAULT_LOW_STOCK = 100
+
+LOW_STOCK_OVERRIDES = {
+    "94193159L": 2500,   # SEAL RING — needs minimum 2500
+    # Add more overrides anytime:
+    # "94197705L": 500,
+    # "94203335L": 200,
+}
+
+
+def low_stock_threshold(item_code: str) -> int:
+    """Return the low-stock threshold for a given item code."""
+    return LOW_STOCK_OVERRIDES.get(str(item_code).strip(), DEFAULT_LOW_STOCK)
+
+
+def is_low_stock(item_code: str, quantity) -> bool:
+    """Check if an item is below its (custom or default) low-stock threshold."""
+    try:
+        qty = int(quantity)
+    except Exception:
+        return False
+    return qty < low_stock_threshold(item_code)
+
 
 # =========================================================
 #  😄 FUN ZONE — Kishan Edition
@@ -59,7 +98,7 @@ def big_order_message(count: int):
 
 
 def late_night_message():
-    hour = datetime.now().hour
+    hour = now_ist().hour
     if 0 <= hour < 5:
         return "🦉 It's past midnight, Kishan. Go to sleep — the valves will still be here tomorrow."
     if 22 <= hour <= 23:
@@ -494,7 +533,8 @@ st.markdown("""
     .inv-table thead th:first-child { border-top-left-radius: 12px; }
     .inv-table thead th:last-child  { border-top-right-radius: 12px; }
     .inv-table thead th:nth-child(6),
-    .inv-table thead th:nth-child(7) { text-align: right !important; }
+    .inv-table thead th:nth-child(7),
+    .inv-table thead th:nth-child(8) { text-align: right !important; }
 
     .inv-table tbody td {
         color: var(--ink) !important;
@@ -529,6 +569,13 @@ st.markdown("""
         font-variant-numeric: tabular-nums;
     }
     .inv-table tbody td:nth-child(7) {
+        text-align: right !important;
+        font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+        font-weight: 700 !important;
+        color: #B45309 !important;
+        font-variant-numeric: tabular-nums; white-space: nowrap;
+    }
+    .inv-table tbody td:nth-child(8) {
         text-align: right !important; color: var(--muted) !important;
         font-size: 0.72rem !important;
         font-family: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
@@ -639,6 +686,7 @@ with st.sidebar:
         label="Select section",
         options=[
             "📋  View Inventory",
+            "⚠️  Low Stock Items",
             "📤  Update from Excel",
             "⚙️  Update by DN-60",
             "📊  Check Production",
@@ -676,7 +724,7 @@ st.markdown(f"""
     <div class="hero-content">
         <h1>AGT Inventory Management System</h1>
         <p>DN-60 Valve Production Tracker</p>
-        <span class="badge"><span class="dot"></span> Live · {datetime.now().strftime('%d %b %Y, %H:%M')}</span>
+        <span class="badge"><span class="dot"></span> Live · {now_ist().strftime('%d %b %Y, %H:%M')}</span>
     </div>
     <div class="hero-3d" aria-hidden="true">
         <div class="cube">
@@ -692,15 +740,24 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # =========================================================
-#  QUICK STATS — 5 cards
+#  QUICK STATS — 5 cards (with custom low-stock threshold)
 # =========================================================
 try:
     total_items = collection.count_documents({})
-    low_stock = collection.count_documents({"Quantity": {"$lt": 100}})
     total_qty_pipeline = list(collection.aggregate([
         {"$group": {"_id": None, "total": {"$sum": "$Quantity"}}}
     ]))
     total_qty = total_qty_pipeline[0]["total"] if total_qty_pipeline else 0
+
+    # ---------- Low stock count using custom thresholds ----------
+    _all_items = list(collection.find(
+        {},
+        {"_id": 0, "Item_code": 1, "Quantity": 1}
+    ))
+    low_stock = sum(
+        1 for it in _all_items
+        if is_low_stock(it.get("Item_code", ""), it.get("Quantity", 0))
+    )
 except Exception:
     total_items, low_stock, total_qty = 0, 0, 0
 
@@ -742,7 +799,7 @@ with c5:
     <div class="metric-card">
         <div class="metric-icon">🕐</div>
         <p class="metric-label">Last Checked</p>
-        <p class="metric-value" style="font-size:1.05rem;">{datetime.today().strftime('%d-%m-%Y %H:%M')}</p>
+        <p class="metric-value" style="font-size:1.05rem;">{now_ist().strftime('%d-%m-%Y %H:%M')}</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -797,7 +854,7 @@ if page == "📤  Update from Excel":
                         data["Item_category"] = str(data.get("Item_category", "")).strip().upper()
                         data["Item_subcategory"] = str(data.get("Item_subcategory", "")).strip().upper()
                         data["Quantity"] = int(data["Quantity"])
-                        data["Updated_date"] = datetime.today().strftime("%d-%m-%Y %H:%M:%S")
+                        data["Updated_date"] = now_ist().strftime("%d-%m-%Y %H:%M:%S")
                         try:
                             collection.insert_one(data)
                             inserted += 1
@@ -862,7 +919,7 @@ elif page == "⚙️  Update by DN-60":
                         st.write(f"• {e}")
                 else:
                     ops.download_excel_data('old')
-                    today = datetime.today().strftime("%d-%m-%Y")
+                    today = now_ist().strftime("%d-%m-%Y")
                     rows = []
 
                     for part_num in sorted(DN60_PART_NUM, key=int):
@@ -1095,7 +1152,7 @@ elif page == "📋  View Inventory":
             df["Quantity"] = df["Quantity"].astype(int)
 
             st.session_state["inv_data"] = df
-            st.session_state["inv_loaded_at"] = datetime.today().strftime('%d-%m-%Y %H:%M')
+            st.session_state["inv_loaded_at"] = now_ist().strftime('%d-%m-%Y %H:%M')
 
         except Exception as e:
             st.error(f"❌ Failed to load: {e}")
@@ -1117,7 +1174,6 @@ elif page == "📋  View Inventory":
         unsafe_allow_html=True,
     )
 
-    # ---------- One-line row: Search | Category | Subcategory ----------
     fc1, fc2, fc3 = st.columns([3, 1, 1])
 
     with fc1:
@@ -1213,7 +1269,7 @@ elif page == "📋  View Inventory":
             "Item_subcategory": "Subcategory",
             "Location": "Location",
             "Quantity": "Qty",
-            "Updated_date": "Updated",
+            "Updated_date": "Updated (IST)",
         })
 
         html_table = display_df.to_html(
@@ -1243,7 +1299,6 @@ elif page == "📋  View Inventory":
         unsafe_allow_html=True,
     )
 
-    # ---------- FLASH MESSAGE (renders after rerun) ----------
     _flash = st.session_state.pop("adj_flash", None)
     if _flash:
         if _flash["status"] == "ok":
@@ -1314,7 +1369,6 @@ elif page == "📋  View Inventory":
                 unsafe_allow_html=True,
             )
 
-    # ---------- Flash for errors too ----------
     _flash_err = st.session_state.pop("adj_flash_err", None)
     if _flash_err:
         st.markdown(
@@ -1352,7 +1406,6 @@ elif page == "📋  View Inventory":
                 key="adj_item",
             )
 
-        # ---- Fetch current stock of selected item ----
         if adj_item != "— Select item —":
             _doc = collection.find_one({"Item_code": adj_item})
             _current_qty = int(_doc.get("Quantity", 0)) if _doc else 0
@@ -1380,16 +1433,13 @@ elif page == "📋  View Inventory":
 
         if save_clicked:
             if adj_pwd.lower() not in ("updatek", "kishan"):
-                # Save error to flash
                 st.session_state["adj_flash_err"] = funny(WRONG_PASSWORD_LINES)
                 st.session_state.pop("inv_data", None)
                 st.rerun()
-
             elif adj_item == "— Select item —":
                 st.session_state["adj_flash_err"] = "Please select an item first."
                 st.session_state.pop("inv_data", None)
                 st.rerun()
-
             else:
                 doc = collection.find_one({"Item_code": adj_item})
                 if not doc:
@@ -1405,7 +1455,7 @@ elif page == "📋  View Inventory":
                         {"Item_code": adj_item},
                         {"$set": {
                             "Quantity": new_qty,
-                            "Updated_date": datetime.today().strftime("%d-%m-%Y %H:%M:%S"),
+                            "Updated_date": now_ist().strftime("%d-%m-%Y %H:%M:%S"),
                         }}
                     )
 
@@ -1435,7 +1485,7 @@ elif page == "📋  View Inventory":
     with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
         df.to_excel(writer, index=False, sheet_name="Current Stock")
 
-    timestamp = datetime.today().strftime("%d-%m-%Y__%H-%M")
+    timestamp = now_ist().strftime("%d-%m-%Y__%H-%M")
 
     if df.empty:
         st.button(
@@ -1454,6 +1504,228 @@ elif page == "📋  View Inventory":
             key="dl5",
             use_container_width=True,
         )
+
+# ---------------------------------------------------------
+#  SECTION 6 — Low Stock Items (custom per-part thresholds)
+# ---------------------------------------------------------
+elif page == "⚠️  Low Stock Items":
+    st.markdown('<div class="section-header">⚠️ Low Stock Items</div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="section-sub">'
+        f'Every item below its minimum threshold '
+        f'(default: {DEFAULT_LOW_STOCK} · some parts have custom minimums).'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+    col_load, col_info = st.columns([1, 3])
+
+    with col_load:
+        low_load_clicked = st.button(
+            "🔄 Load Low Stock",
+            key="btn6",
+            type="primary",
+            use_container_width=True,
+        )
+
+    with col_info:
+        if "low_data" in st.session_state:
+            cached_at = st.session_state.get("low_loaded_at", "")
+            st.caption(f"✔️ Data loaded · {cached_at}")
+
+    # ---------- Fetch: all items, filter in Python by custom thresholds ----------
+    if low_load_clicked or "low_data" not in st.session_state:
+        try:
+            _all = list(collection.find(
+                {},
+                {
+                    "_id": 0,
+                    "Item_code": 1, "Item_name": 1,
+                    "Item_category": 1, "Item_subcategory": 1,
+                    "Location": 1, "Quantity": 1,
+                    "Updated_date": 1,
+                }
+            ))
+
+            df_all = pd.DataFrame(_all)
+            if not df_all.empty:
+                df_all["Quantity"] = df_all["Quantity"].astype(int)
+
+                df = df_all[
+                    df_all.apply(
+                        lambda r: is_low_stock(r["Item_code"], r["Quantity"]),
+                        axis=1
+                    )
+                ].copy()
+
+                df["Threshold"] = df["Item_code"].apply(low_stock_threshold)
+                df = df.sort_values("Quantity", ascending=True).reset_index(drop=True)
+            else:
+                df = pd.DataFrame()
+
+            st.session_state["low_data"] = df
+            st.session_state["low_loaded_at"] = now_ist().strftime('%d-%m-%Y %H:%M')
+
+        except Exception as e:
+            st.error(f"❌ Failed to load: {e}")
+            st.stop()
+
+    df_low = st.session_state.get("low_data")
+
+    if df_low is None or df_low.empty:
+        st.success("🎉 Great news — no items are below their thresholds!")
+        st.stop()
+
+    # ---------- Summary cards (2 cards, brighter) ----------
+    total_low_items = len(df_low)
+    out_of_stock    = int((df_low["Quantity"] == 0).sum())
+
+    c1, c2 = st.columns(2)
+
+    with c1:
+        st.markdown(f"""
+        <div style="
+            background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+            border: 2px solid #F59E0B;
+            border-left: 6px solid #D97706;
+            border-radius: 12px;
+            padding: 1.1rem 1.35rem;
+            box-shadow: 0 4px 14px -4px rgba(245,158,11,0.45);
+            height: 100%;
+        ">
+            <div style="font-size:1.3rem; margin-bottom:0.35rem;">⚠️</div>
+            <p style="
+                font-size: 0.75rem; font-weight: 700; color: #92400E;
+                text-transform: uppercase; letter-spacing: 0.08em; margin: 0;
+            ">Low Stock Items</p>
+            <p style="
+                font-size: 1.9rem; font-weight: 800; color: #B45309;
+                margin: 0.45rem 0 0 0; letter-spacing: -0.02em; line-height: 1.1;
+            ">{total_low_items}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with c2:
+        st.markdown(f"""
+        <div style="
+            background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+            border: 2px solid #EF4444;
+            border-left: 6px solid #DC2626;
+            border-radius: 12px;
+            padding: 1.1rem 1.35rem;
+            box-shadow: 0 4px 14px -4px rgba(239,68,68,0.45);
+            height: 100%;
+        ">
+            <div style="font-size:1.3rem; margin-bottom:0.35rem;">🚫</div>
+            <p style="
+                font-size: 0.75rem; font-weight: 700; color: #991B1B;
+                text-transform: uppercase; letter-spacing: 0.08em; margin: 0;
+            ">Out of Stock (0)</p>
+            <p style="
+                font-size: 1.9rem; font-weight: 800; color: #B91C1C;
+                margin: 0.45rem 0 0 0; letter-spacing: -0.02em; line-height: 1.1;
+            ">{out_of_stock}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ---------- Search box ----------
+    st.markdown(
+        '<div class="section-header" style="font-size:0.95rem; margin-bottom:0.5rem;">'
+        '🔍 Search Low Stock</div>',
+        unsafe_allow_html=True,
+    )
+
+    search_low = st.text_input(
+        "Search",
+        placeholder="🔎 Filter by item name or code…",
+        key="low_search",
+        label_visibility="collapsed",
+    )
+
+    df_filtered = df_low.copy()
+    if search_low.strip():
+        q = search_low.strip().lower()
+        mask = (
+            df_filtered["Item_name"].astype(str).str.lower().str.contains(q, na=False)
+            | df_filtered["Item_code"].astype(str).str.lower().str.contains(q, na=False)
+        )
+        df_filtered = df_filtered[mask]
+
+    st.caption(
+        f"Showing **{len(df_filtered)}** of **{len(df_low)}** low-stock items"
+        + (f" · {len(df_low) - len(df_filtered)} filtered out"
+           if len(df_filtered) < len(df_low) else "")
+    )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ---------- Table (clean, no colored cells) ----------
+    if df_filtered.empty:
+        st.info("🔍 No low-stock items match your search.")
+    else:
+        def clean(v):
+            if pd.isna(v) or str(v).lower() in ("nan", "none", "null", "nat"):
+                return "—"
+            return str(v)
+
+        rows_html = []
+        for _, r in df_filtered.iterrows():
+            qty = int(r.get("Quantity", 0))
+            threshold_val = int(r.get("Threshold", DEFAULT_LOW_STOCK))
+
+            rows_html.append(
+                "<tr>"
+                f"<td>{clean(r.get('Item_code'))}</td>"
+                f"<td>{clean(r.get('Item_name'))}</td>"
+                f"<td>{clean(r.get('Item_category'))}</td>"
+                f"<td>{clean(r.get('Item_subcategory'))}</td>"
+                f"<td>{clean(r.get('Location'))}</td>"
+                f"<td style='text-align:right;'>{qty}</td>"
+                f"<td style='text-align:right;'>{threshold_val}</td>"
+                f"<td style='text-align:right;'>{clean(r.get('Updated_date'))}</td>"
+                "</tr>"
+            )
+
+        html_table = (
+            '<table class="inv-table">'
+            '<thead><tr>'
+            '<th>Code</th>'
+            '<th>Item Name</th>'
+            '<th>Category</th>'
+            '<th>Subcategory</th>'
+            '<th>Location</th>'
+            '<th style="text-align:right;">Qty</th>'
+            '<th style="text-align:right;">Min Required</th>'
+            '<th style="text-align:right;">Updated (IST)</th>'
+            '</tr></thead>'
+            '<tbody>' + "".join(rows_html) + '</tbody>'
+            '</table>'
+        )
+
+        st.markdown(
+            f'<div class="inv-table-wrap">{html_table}</div>',
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ---------- Download low-stock list ----------
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+        df_filtered.to_excel(writer, index=False, sheet_name="Low Stock")
+
+    ts = now_ist().strftime("%d-%m-%Y__%H-%M")
+
+    st.download_button(
+        label=f"📥 Download {len(df_filtered)} Low-Stock Item(s) as Excel",
+        data=buffer.getvalue(),
+        file_name=f"agt_low_stock_{ts}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        key="dl6",
+        use_container_width=True,
+    )
 
 # =========================================================
 #  🌙 LATE-NIGHT EASTER EGG
