@@ -2,7 +2,7 @@
 # ---------------------------------------------------------
 #  STREAMLIT WEB UI — Enterprise Dashboard
 #  Palette: #1F2A44 (Navy) · #E8DCC8 (Cream) · #C6A75E (Gold)
-#  v24: per-part low-stock thresholds · IST · clean tables
+#  v25: exact-match per-part thresholds · cache versioning
 #  Built with ❤️ for Kishan
 # ---------------------------------------------------------
 import io
@@ -34,11 +34,13 @@ def now_ist():
 # =========================================================
 #  ⚠️ LOW STOCK THRESHOLDS
 #  Default = 100 · Per-part overrides below
+#  Each code is UNIQUE — matched exactly as stored.
 # =========================================================
 DEFAULT_LOW_STOCK = 100
 
 LOW_STOCK_OVERRIDES = {
-    "94193159L": 2500,   # SEAL RING — needs minimum 2500
+    "94193159L": 2500,
+
     # Add more overrides anytime:
     # "94197705L": 500,
     # "94203335L": 200,
@@ -46,8 +48,12 @@ LOW_STOCK_OVERRIDES = {
 
 
 def low_stock_threshold(item_code: str) -> int:
-    """Return the low-stock threshold for a given item code."""
-    return LOW_STOCK_OVERRIDES.get(str(item_code).strip(), DEFAULT_LOW_STOCK)
+    """
+    Return the low-stock threshold for a given item code.
+    Exact-match lookup — each part code is unique.
+    """
+    key = str(item_code).strip()
+    return LOW_STOCK_OVERRIDES.get(key, DEFAULT_LOW_STOCK)
 
 
 def is_low_stock(item_code: str, quantity) -> bool:
@@ -740,7 +746,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # =========================================================
-#  QUICK STATS — 5 cards (with custom low-stock threshold)
+#  QUICK STATS — 5 cards (exact-match low-stock thresholds)
 # =========================================================
 try:
     total_items = collection.count_documents({})
@@ -749,7 +755,6 @@ try:
     ]))
     total_qty = total_qty_pipeline[0]["total"] if total_qty_pipeline else 0
 
-    # ---------- Low stock count using custom thresholds ----------
     _all_items = list(collection.find(
         {},
         {"_id": 0, "Item_code": 1, "Quantity": 1}
@@ -848,6 +853,7 @@ if page == "📤  Update from Excel":
 
                     for index, row in df.iterrows():
                         data = row.to_dict()
+                        # ---------- Normalize text fields (preserve code case) ----------
                         data["_id"] = str(data["Item_code"]).strip()
                         data["Item_code"] = str(data["Item_code"]).strip()
                         data["Item_name"] = str(data.get("Item_name", "")).strip().upper()
@@ -1506,7 +1512,7 @@ elif page == "📋  View Inventory":
         )
 
 # ---------------------------------------------------------
-#  SECTION 6 — Low Stock Items (custom per-part thresholds)
+#  SECTION 6 — Low Stock Items (exact-match per-part thresholds)
 # ---------------------------------------------------------
 elif page == "⚠️  Low Stock Items":
     st.markdown('<div class="section-header">⚠️ Low Stock Items</div>', unsafe_allow_html=True)
@@ -1533,8 +1539,14 @@ elif page == "⚠️  Low Stock Items":
             cached_at = st.session_state.get("low_loaded_at", "")
             st.caption(f"✔️ Data loaded · {cached_at}")
 
-    # ---------- Fetch: all items, filter in Python by custom thresholds ----------
-    if low_load_clicked or "low_data" not in st.session_state:
+    # ---------- Cache version — bump this to force refresh ----------
+    _LOW_CACHE_VERSION = 3
+
+    if (
+        low_load_clicked
+        or "low_data" not in st.session_state
+        or st.session_state.get("low_cache_version") != _LOW_CACHE_VERSION
+    ):
         try:
             _all = list(collection.find(
                 {},
@@ -1565,6 +1577,7 @@ elif page == "⚠️  Low Stock Items":
 
             st.session_state["low_data"] = df
             st.session_state["low_loaded_at"] = now_ist().strftime('%d-%m-%Y %H:%M')
+            st.session_state["low_cache_version"] = _LOW_CACHE_VERSION
 
         except Exception as e:
             st.error(f"❌ Failed to load: {e}")
