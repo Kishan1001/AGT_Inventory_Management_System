@@ -1,22 +1,5 @@
-################################################################### for app_professional.py
-#[theme]
-#base = "light"
-#primaryColor = "#C6A75E"
-#backgroundColor = "#FAFAF7"
-#secondaryBackgroundColor = "#FFFFFF"
-#textColor = "#1A2332"
-#font = "sans serif"
-#
-#[theme.sidebar]
-#backgroundColor = "#1F2A44"
-#secondaryBackgroundColor = "#2A3856"
-#textColor = "#E8DCC8"
-#
-#[server]
-#headless = true
 
-################################################################### for app_professional.py
-
+#################################################################################### main app.py
 [theme]
 base = "light"
 primaryColor = "#C6A75E"
@@ -32,3 +15,4 @@ textColor = "#E8DCC8"
 
 [server]
 headless = true
+#################################################################################### main app.py
