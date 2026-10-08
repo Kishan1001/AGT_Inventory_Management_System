@@ -1924,6 +1924,268 @@ elif page == "⚠️   Low Stock Items":
         use_container_width=True,
     )
 
+
+# ---------------------------------------------------------
+#  SECTION 7 — 📜 Audit Log (Password Protected)
+# ---------------------------------------------------------
+elif page == "📜   Audit Log":
+    st.markdown('<div class="section-header">📜 Audit Log</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-sub">'
+        'Complete record of every stock change — when, what, why. '
+        'Password protected.</div>',
+        unsafe_allow_html=True,
+    )
+
+    # ---------- Password gate ----------
+    if not st.session_state.get("audit_authed", False):
+        st.info("🔒 **Enter the admin password to view the audit log.**")
+
+        col_pwd, col_btn = st.columns([3, 1])
+        with col_pwd:
+            admin_pwd = st.text_input(
+                "Admin password",
+                type="password",
+                key="audit_pwd_input",
+                placeholder="Enter admin password",
+                label_visibility="collapsed",
+            )
+        with col_btn:
+            if st.button("🔓 Unlock", key="audit_unlock_btn", type="primary", use_container_width=True):
+                if admin_pwd == "admin@agt2026":
+                    st.session_state["audit_authed"] = True
+                    st.rerun()
+                else:
+                    st.error("❌ Wrong admin password.")
+                    st.toast("🔐 Access denied!", icon="🚨")
+
+        st.stop()
+
+    # ---------- Lock button ----------
+    _, col_lock = st.columns([4, 1])
+    with col_lock:
+        if st.button("🔒 Lock", key="audit_lock_btn", use_container_width=True):
+            st.session_state["audit_authed"] = False
+            st.rerun()
+
+    # ---------- Check history collection ----------
+    if history_collection is None:
+        st.error("⚠️ History collection unavailable.")
+        st.stop()
+
+    # ---------- Load button ----------
+    col_load, col_info = st.columns([1, 3])
+
+    with col_load:
+        audit_load_clicked = st.button(
+            "🔄 Load Audit Log",
+            key="btn_audit_load",
+            type="primary",
+            use_container_width=True,
+        )
+
+    with col_info:
+        if "audit_data" in st.session_state:
+            cached_at = st.session_state.get("audit_loaded_at", "")
+            st.caption(f"✔️ Data loaded · {cached_at}")
+
+    # ---------- Fetch ----------
+    if audit_load_clicked or "audit_data" not in st.session_state:
+        try:
+            rows = list(history_collection.find({}, {"_id": 0}))
+
+            df_audit = pd.DataFrame(rows)
+
+            if not df_audit.empty:
+                df_audit["Timestamp"] = pd.to_datetime(
+                    df_audit["Timestamp"], format="%d-%m-%Y %H:%M:%S", errors="coerce"
+                )
+                df_audit = df_audit.dropna(subset=["Timestamp"])
+                df_audit = df_audit.sort_values("Timestamp", ascending=False).reset_index(drop=True)
+
+            st.session_state["audit_data"] = df_audit
+            st.session_state["audit_loaded_at"] = now_ist().strftime('%d-%m-%Y %H:%M')
+
+        except Exception as e:
+            st.error(f"❌ Failed to load audit log: {e}")
+            st.stop()
+
+    df_audit = st.session_state.get("audit_data")
+
+    if df_audit is None or df_audit.empty:
+        st.info("📭 No audit entries yet. Make some changes to start logging.")
+        st.stop()
+
+    # ---------- Summary cards ----------
+    total_entries = len(df_audit)
+    adds = int(df_audit[df_audit["Change"] > 0]["Change"].sum())
+    rems = int(df_audit[df_audit["Change"] < 0]["Change"].sum())
+    unique_items = df_audit["Item_code"].nunique()
+
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-icon">📊</div>
+            <p class="metric-label">Total Entries</p>
+            <p class="metric-value primary">{total_entries}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with c2:
+        st.markdown(f"""
+        <div class="metric-card accent-gold">
+            <div class="metric-icon">📦</div>
+            <p class="metric-label">Unique Items</p>
+            <p class="metric-value gold">{unique_items}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with c3:
+        st.markdown(f"""
+        <div class="metric-card accent-ok">
+            <div class="metric-icon">🟢</div>
+            <p class="metric-label">Total Added</p>
+            <p class="metric-value success">+{adds:,}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with c4:
+        st.markdown(f"""
+        <div class="metric-card accent-danger">
+            <div class="metric-icon">🔴</div>
+            <p class="metric-label">Total Removed</p>
+            <p class="metric-value danger">{rems:,}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ---------- Filters ----------
+    st.markdown(
+        '<div class="section-header" style="font-size:0.95rem; margin-bottom:0.5rem;">'
+        '🔍 Filter Audit Log</div>',
+        unsafe_allow_html=True,
+    )
+
+    f1, f2 = st.columns([3, 1])
+
+    with f1:
+        audit_search = st.text_input(
+            "Search",
+            placeholder="🔎 Search item code / name / reason…",
+            key="audit_search_input",
+            label_visibility="collapsed",
+        )
+
+    with f2:
+        reason_options = ["All reasons"] + sorted(
+            [r for r in df_audit["Reason"].dropna().unique().tolist() if str(r).strip()]
+        )
+        audit_reason_filter = st.selectbox(
+            "Reason",
+            options=reason_options,
+            key="audit_reason_filter_select",
+            label_visibility="collapsed",
+        )
+
+    df_view = df_audit.copy()
+
+    if audit_search.strip():
+        q = audit_search.strip().lower()
+        mask = (
+            df_view["Item_code"].astype(str).str.lower().str.contains(q, na=False)
+            | df_view["Item_name"].astype(str).str.lower().str.contains(q, na=False)
+            | df_view["Reason"].astype(str).str.lower().str.contains(q, na=False)
+        )
+        df_view = df_view[mask]
+
+    if audit_reason_filter != "All reasons":
+        df_view = df_view[df_view["Reason"] == audit_reason_filter]
+
+    st.caption(
+        f"Showing **{len(df_view)}** of **{len(df_audit)}** entries"
+        + (f" · {len(df_audit) - len(df_view)} filtered out"
+           if len(df_view) < len(df_audit) else "")
+    )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ---------- Table ----------
+    if df_view.empty:
+        st.info("🔍 No audit entries match your filters.")
+    else:
+        def _delta_style(v):
+            try:
+                v = int(v)
+            except Exception:
+                return ""
+            if v > 0:
+                return "color:#10B981; font-weight:700; text-align:right;"
+            if v < 0:
+                return "color:#EF4444; font-weight:700; text-align:right;"
+            return "color:#6B7280; text-align:right;"
+
+        def clean(v):
+            if pd.isna(v) or str(v).lower() in ("nan", "none", "null", "nat", ""):
+                return "—"
+            return str(v)
+
+        rows_html = []
+        for _, r in df_view.iterrows():
+            ts = r["Timestamp"].strftime("%d-%m-%Y %H:%M:%S") if pd.notna(r["Timestamp"]) else "—"
+            delta = r.get("Change", 0)
+            try:
+                delta_str = f"+{int(delta)}" if int(delta) > 0 else str(int(delta))
+            except Exception:
+                delta_str = str(delta)
+
+            rows_html.append(
+                "<tr>"
+                f"<td style='font-family:JetBrains Mono,monospace; font-size:0.72rem;'>{ts}</td>"
+                f"<td style='font-family:JetBrains Mono,monospace; font-weight:600;'>{clean(r.get('Item_code'))}</td>"
+                f"<td style='font-weight:600;'>{clean(r.get('Item_name'))}</td>"
+                f"<td style='text-align:right;'>{int(r.get('Old_Qty', 0))}</td>"
+                f"<td style='text-align:right;'>{int(r.get('New_Qty', 0))}</td>"
+                f"<td style='{_delta_style(delta)}'>{delta_str}</td>"
+                f"<td style='color:#6B7280; font-size:0.75rem;'>{clean(r.get('Reason'))}</td>"
+                "</tr>"
+            )
+
+        html_table = (
+            '<table class="inv-table">'
+            '<thead><tr>'
+            '<th>When (IST)</th>'
+            '<th>Code</th>'
+            '<th>Item Name</th>'
+            '<th style="text-align:right;">Old</th>'
+            '<th style="text-align:right;">New</th>'
+            '<th style="text-align:right;">Δ</th>'
+            '<th>Reason</th>'
+            '</tr></thead>'
+            '<tbody>' + "".join(rows_html) + '</tbody>'
+            '</table>'
+        )
+
+        st.markdown(
+            f'<div class="inv-table-wrap">{html_table}</div>',
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ---------- Download ----------
+    buffer_a = io.BytesIO()
+    with pd.ExcelWriter(buffer_a, engine="openpyxl") as writer:
+        df_view.to_excel(writer, index=False, sheet_name="Audit Log")
+
+    ts_dl = now_ist().strftime("%d-%m-%Y__%H-%M")
+
+    st.download_button(
+        label=f"📥 Download Audit Log ({len(df_view)} entries) as Excel",
+        data=buffer_a.getvalue(),
+        file_name=f"agt_audit_log_{ts_dl}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        key="dl_audit_btn",
+        use_container_width=True,
+    )
 # =========================================================
 #  🌙 LATE-NIGHT EASTER EGG
 # =========================================================

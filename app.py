@@ -2,7 +2,7 @@
 # ---------------------------------------------------------
 #  STREAMLIT WEB UI — Enterprise Dashboard
 #  Palette: #1F2A44 (Navy) · #E8DCC8 (Cream) · #C6A75E (Gold)
-#  v32: reference-style sidebar with gold radio indicators
+#  v35: email alerts (auto) — sidebar Alerts panel removed
 #  Built with ❤️ for Kishan
 # ---------------------------------------------------------
 import io
@@ -13,6 +13,7 @@ import pandas as pd
 import streamlit as st
 
 import inventory_ops as ops
+import mailer  # 📧 Email alert module
 from inventory_ops import (
     DN60_PART_NUM,
     collection,
@@ -57,6 +58,94 @@ def is_low_stock(item_code: str, quantity) -> bool:
     except Exception:
         return False
     return qty < low_stock_threshold(item_code)
+
+
+# =========================================================
+#  📧 EMAIL ALERT HELPERS
+# =========================================================
+def _record_email_attempt(trigger: str, ok: bool, msg: str):
+    """Save the result of an email attempt (kept for internal use)."""
+    log = st.session_state.setdefault("email_alert_log", [])
+    log.insert(0, {
+        "when": now_ist().strftime("%d-%m-%Y %H:%M:%S"),
+        "trigger": trigger,
+        "ok": ok,
+        "msg": msg,
+    })
+    st.session_state["email_alert_log"] = log[:20]
+
+
+def collect_low_stock_alerts():
+    """Return a list of dicts for every item below its threshold."""
+    alerts = []
+    try:
+        cursor = collection.find(
+            {},
+            {
+                "_id": 0,
+                "Item_code": 1,
+                "Item_name": 1,
+                "Item_category": 1,
+                "Item_subcategory": 1,
+                "Location": 1,
+                "Quantity": 1,
+            },
+        )
+        for doc in cursor:
+            code = str(doc.get("Item_code", "")).strip()
+            qty = int(doc.get("Quantity", 0) or 0)
+            if not is_low_stock(code, qty):
+                continue
+            threshold = low_stock_threshold(code)
+            alerts.append({
+                "code": code,
+                "name": str(doc.get("Item_name", "—")).strip() or "—",
+                "category": str(doc.get("Item_category", "—")),
+                "subcategory": str(doc.get("Item_subcategory", "—")),
+                "location": str(doc.get("Location", "—")),
+                "qty": qty,
+                "threshold": threshold,
+                "shortfall": max(0, threshold - qty),
+                "is_zero": qty == 0,
+            })
+    except Exception:
+        pass
+
+    alerts.sort(key=lambda a: (not a["is_zero"], -a["shortfall"]))
+    return alerts
+
+
+def maybe_send_low_stock_alert(trigger_reason: str, force: bool = False):
+    """
+    Check thresholds and send email alert if needed.
+    Set force=True to bypass the cooldown.
+    """
+    alerts = collect_low_stock_alerts()
+    if not alerts:
+        _record_email_attempt(trigger_reason, False, "No low-stock items found.")
+        return False, "No low-stock items found."
+
+    # ---- Cooldown (skip unless forced) ----
+    if not force:
+        last_sent = st.session_state.get("last_alert_sent_at")
+        if last_sent:
+            try:
+                last_dt = datetime.strptime(last_sent, "%d-%m-%Y %H:%M:%S")
+                elapsed = (now_ist().replace(tzinfo=None) - last_dt).total_seconds()
+                if elapsed < 600:  # 10 minutes
+                    msg = "Alert cooldown active (10 min)."
+                    _record_email_attempt(trigger_reason, False, msg)
+                    return False, msg
+            except Exception:
+                pass
+
+    ok, msg = mailer.send_low_stock_alert(alerts, trigger_reason)
+    _record_email_attempt(trigger_reason, ok, msg)
+
+    if ok:
+        st.session_state["last_alert_sent_at"] = now_ist().strftime("%d-%m-%Y %H:%M:%S")
+        st.session_state["last_alert_count"] = len(alerts)
+    return ok, msg
 
 
 # =========================================================
@@ -634,20 +723,17 @@ st.markdown("""
        SIDEBAR — Reference radio-style menu
        ========================================================= */
 
-    /* Sidebar background */
     [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #1F2A44 0%, #18223A 100%) !important;
         border-right: 1px solid #16202F;
     }
     [data-testid="stSidebar"] * { color: #CBD5E1 !important; }
 
-    /* Menu button container */
     [data-testid="stSidebar"] .stButton {
         margin: 0 !important;
         padding: 0 10px !important;
     }
 
-        /* Base menu item — tighter spacing */
     [data-testid="stSidebar"] .stButton > button {
         position: relative !important;
         background: transparent !important;
@@ -672,7 +758,6 @@ st.markdown("""
         line-height: 1.35 !important;
     }
 
-    /* Circle indicator before each button */
     [data-testid="stSidebar"] .stButton > button::before {
         content: "" !important;
         position: absolute !important;
@@ -688,7 +773,6 @@ st.markdown("""
         box-sizing: border-box !important;
     }
 
-    /* Push button text past the circle */
     [data-testid="stSidebar"] .stButton > button p {
         margin-left: 26px !important;
         font-size: 0.92rem !important;
@@ -699,7 +783,6 @@ st.markdown("""
         margin-bottom: 0 !important;
     }
 
-    /* Hover */
     [data-testid="stSidebar"] .stButton > button:hover {
         background: rgba(198,167,94,0.08) !important;
         color: #FFFFFF !important;
@@ -709,14 +792,12 @@ st.markdown("""
         border-color: #C6A75E !important;
     }
 
-    /* Focus */
     [data-testid="stSidebar"] .stButton > button:focus {
         box-shadow: none !important;
         outline: none !important;
         color: #FFFFFF !important;
     }
 
-    /* Active — cream glow pill + gold left bar */
     [data-testid="stSidebar"] .stButton > button[kind="primary"],
     [data-testid="stSidebar"] .stButton > button[data-testid="baseButton-primary"] {
         background: linear-gradient(90deg,
@@ -732,7 +813,6 @@ st.markdown("""
             0 4px 24px -8px rgba(198,167,94,0.45) !important;
     }
 
-    /* Active circle — filled gold with halo */
     [data-testid="stSidebar"] .stButton > button[kind="primary"]::before,
     [data-testid="stSidebar"] .stButton > button[data-testid="baseButton-primary"]::before {
         border-color: #C6A75E !important;
@@ -740,7 +820,6 @@ st.markdown("""
         box-shadow: 0 0 0 4px rgba(198,167,94,0.15) !important;
     }
 
-    /* No extra space between consecutive buttons */
     [data-testid="stSidebar"] .stButton + .stButton {
         margin-top: 0 !important;
     }
@@ -861,6 +940,7 @@ with st.sidebar:
         ):
             st.session_state["current_page"] = _item
             st.rerun()
+
     # ---------- Footer ----------
     st.markdown(
         '<div style="margin-top:32px; padding:18px 12px 0 12px; '
@@ -1034,6 +1114,15 @@ if page == "📤   Update from Excel":
 
                     st.success(f"✅ Inventory updated — **{inserted}** items inserted, **{duplicates}** duplicates skipped.")
 
+                    # 📧 Email alert after re-upload
+                    ok, msg = maybe_send_low_stock_alert(
+                        trigger_reason="Excel re-upload"
+                    )
+                    if ok:
+                        st.toast(f"📧 Low-stock alert emailed — {msg}", icon="📬")
+                    else:
+                        st.toast(f"📧 Alert not sent: {msg}", icon="⚠️")
+
                     if inserted >= 100:
                         st.balloons()
                         st.toast(f"🎊 {inserted} items in one go, Kishan! Legendary upload.", icon="🏆")
@@ -1122,6 +1211,15 @@ elif page == "⚙️   Update by DN-60":
 
                     st.success(f"✅ Stock updated for building **{dn60_count}** valves!")
                     st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+                    # 📧 Email alert if any part dropped below threshold
+                    ok, msg = maybe_send_low_stock_alert(
+                        trigger_reason=f"DN-60 build ({dn60_count} valves)"
+                    )
+                    if ok:
+                        st.toast(f"📧 Low-stock alert emailed — {msg}", icon="📬")
+                    else:
+                        st.toast(f"📧 Alert not sent: {msg}", icon="⚠️")
             except Exception as e:
                 st.error(f"❌ Update failed: {e}")
 
@@ -1670,6 +1768,16 @@ elif page == "📋   View Inventory":
                         "status": "ok" if new_qty != old_qty else "same",
                     }
 
+                    # 📧 Email alert whenever the item is low after the change
+                    if is_low_stock(adj_item, new_qty):
+                        ok, msg = maybe_send_low_stock_alert(
+                            trigger_reason=f"Adjust {adj_item} ({old_qty}→{new_qty})"
+                        )
+                        if ok:
+                            st.toast(f"📧 Low-stock alert emailed — {msg}", icon="📬")
+                        else:
+                            st.toast(f"📧 Alert not sent: {msg}", icon="⚠️")
+
                     st.session_state.pop("adj_reason_input", None)
                     st.session_state.pop("inv_data", None)
                     st.rerun()
@@ -2186,6 +2294,7 @@ elif page == "📜   Audit Log":
         key="dl_audit_btn",
         use_container_width=True,
     )
+
 # =========================================================
 #  🌙 LATE-NIGHT EASTER EGG
 # =========================================================
