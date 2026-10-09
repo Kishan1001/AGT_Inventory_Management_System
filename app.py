@@ -2,7 +2,7 @@
 # ---------------------------------------------------------
 #  STREAMLIT WEB UI — Enterprise Dashboard
 #  Palette: #1F2A44 (Navy) · #E8DCC8 (Cream) · #C6A75E (Gold)
-#  v35: email alerts (auto) — sidebar Alerts panel removed
+#  v38: 5-second toasts + gold countdown bar
 #  Built with ❤️ for Kishan
 # ---------------------------------------------------------
 import io
@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 import inventory_ops as ops
 import mailer  # 📧 Email alert module
@@ -30,6 +31,61 @@ IST = timezone(timedelta(hours=5, minutes=30))
 def now_ist():
     """Return current time in IST (Asia/Kolkata)."""
     return datetime.now(IST)
+
+
+# =========================================================
+#  📜 AUTO-SCROLL HELPERS
+# =========================================================
+def auto_scroll_to(element_id: str = None, delay: int = 250):
+    """Smoothly scroll the parent Streamlit window to an element."""
+    if element_id:
+        js = f"""
+        <script>
+            setTimeout(function() {{
+                try {{
+                    var el = window.parent.document.getElementById("{element_id}");
+                    if (!el) {{
+                        el = window.parent.document.querySelector("{element_id}");
+                    }}
+                    if (el) {{
+                        el.scrollIntoView({{
+                            behavior: 'smooth',
+                            block: 'center'
+                        }});
+                    }}
+                }} catch (e) {{
+                    console.warn('auto_scroll_to failed:', e);
+                }}
+            }}, {delay});
+        </script>
+        """
+    else:
+        js = f"""
+        <script>
+            setTimeout(function() {{
+                try {{
+                    window.parent.scrollTo({{
+                        top: window.parent.document.body.scrollHeight,
+                        behavior: 'smooth'
+                    }});
+                }} catch (e) {{}}
+            }}, {delay});
+        </script>
+        """
+    components.html(js, height=0, width=0)
+
+
+def scroll_to_top(delay: int = 200):
+    """Scroll the parent window to the top of the page."""
+    components.html(f"""
+    <script>
+        setTimeout(function() {{
+            try {{
+                window.parent.scrollTo({{ top: 0, behavior: 'smooth' }});
+            }} catch (e) {{}}
+        }}, {delay});
+    </script>
+    """, height=0, width=0)
 
 
 # =========================================================
@@ -58,6 +114,97 @@ def is_low_stock(item_code: str, quantity) -> bool:
     except Exception:
         return False
     return qty < low_stock_threshold(item_code)
+
+
+# =========================================================
+#  🎊 UPLOAD SUCCESS ANIMATION
+# =========================================================
+def show_upload_success_animated(inserted: int, duplicates: int, total: int):
+    """Premium SVG checkmark draw + card rise animation."""
+    timestamp = now_ist().strftime("%d %b %Y, %H:%M IST")
+    uid = int(datetime.now().timestamp() * 1000)
+
+    st.markdown(f"""
+    <style>
+        @keyframes rise-{uid} {{
+            0%   {{ opacity: 0; transform: translateY(20px); }}
+            100% {{ opacity: 1; transform: translateY(0); }}
+        }}
+        @keyframes circle-draw-{uid} {{
+            0%   {{ stroke-dashoffset: 350; }}
+            100% {{ stroke-dashoffset: 0; }}
+        }}
+        @keyframes check-draw-{uid} {{
+            0%   {{ stroke-dashoffset: 100; }}
+            100% {{ stroke-dashoffset: 0; }}
+        }}
+        @keyframes glow-{uid} {{
+            0%, 100% {{ box-shadow: 0 4px 20px -8px rgba(198,167,94,0.3); }}
+            50%      {{ box-shadow: 0 4px 30px -4px rgba(198,167,94,0.7); }}
+        }}
+    </style>
+    <div style="
+        background: linear-gradient(135deg, #FFFFFF 0%, #FAF6EC 100%);
+        border: 1.5px solid #E8DCC8;
+        border-left: 5px solid #C6A75E;
+        border-radius: 14px;
+        padding: 1.6rem 2rem;
+        margin: 1rem 0 1.5rem 0;
+        font-family: 'Inter', sans-serif;
+        animation: rise-{uid} 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+                   glow-{uid} 2.5s ease-in-out 0.6s;
+    ">
+        <div style="display:flex; align-items:center; gap:16px; margin-bottom:1.2rem;">
+            <svg width="48" height="48" viewBox="0 0 48 48" style="flex-shrink:0;">
+                <circle cx="24" cy="24" r="22" fill="none"
+                        stroke="#C6A75E" stroke-width="2.5"
+                        stroke-dasharray="350"
+                        style="animation: circle-draw-{uid} 0.8s ease-out forwards;"/>
+                <path d="M14 24 L21 31 L34 18" fill="none"
+                      stroke="#C6A75E" stroke-width="3.5"
+                      stroke-linecap="round" stroke-linejoin="round"
+                      stroke-dasharray="100"
+                      style="stroke-dashoffset:100;
+                             animation: check-draw-{uid} 0.5s ease-out 0.6s forwards;"/>
+            </svg>
+            <div>
+                <div style="font-size:1.15rem; font-weight:700; color:#1F2A44;
+                            letter-spacing:-0.01em; line-height:1.3;">
+                    Upload Complete</div>
+                <div style="font-size:0.82rem; color:#6B7280; margin-top:2px;">
+                    Inventory synchronized · {timestamp}</div>
+            </div>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px;
+                    padding-top:1rem; border-top:1px solid #E8DCC8;">
+            <div style="text-align:center;">
+                <div style="font-size:0.68rem; font-weight:700; color:#6B7280;
+                            text-transform:uppercase; letter-spacing:0.08em;">
+                    Inserted</div>
+                <div style="font-size:1.5rem; font-weight:800; color:#1F2A44;
+                            font-family:'JetBrains Mono',monospace;
+                            margin-top:4px; line-height:1;">{inserted:,}</div>
+            </div>
+            <div style="text-align:center;">
+                <div style="font-size:0.68rem; font-weight:700; color:#6B7280;
+                            text-transform:uppercase; letter-spacing:0.08em;">
+                    Skipped</div>
+                <div style="font-size:1.5rem; font-weight:800;
+                            color:{'#B45309' if duplicates > 0 else '#1F2A44'};
+                            font-family:'JetBrains Mono',monospace;
+                            margin-top:4px; line-height:1;">{duplicates:,}</div>
+            </div>
+            <div style="text-align:center;">
+                <div style="font-size:0.68rem; font-weight:700; color:#6B7280;
+                            text-transform:uppercase; letter-spacing:0.08em;">
+                    Total</div>
+                <div style="font-size:1.5rem; font-weight:800; color:#A98A44;
+                            font-family:'JetBrains Mono',monospace;
+                            margin-top:4px; line-height:1;">{total:,}</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 
 # =========================================================
@@ -116,23 +263,19 @@ def collect_low_stock_alerts():
 
 
 def maybe_send_low_stock_alert(trigger_reason: str, force: bool = False):
-    """
-    Check thresholds and send email alert if needed.
-    Set force=True to bypass the cooldown.
-    """
+    """Check thresholds and send email alert if needed."""
     alerts = collect_low_stock_alerts()
     if not alerts:
         _record_email_attempt(trigger_reason, False, "No low-stock items found.")
         return False, "No low-stock items found."
 
-    # ---- Cooldown (skip unless forced) ----
     if not force:
         last_sent = st.session_state.get("last_alert_sent_at")
         if last_sent:
             try:
                 last_dt = datetime.strptime(last_sent, "%d-%m-%Y %H:%M:%S")
                 elapsed = (now_ist().replace(tzinfo=None) - last_dt).total_seconds()
-                if elapsed < 600:  # 10 minutes
+                if elapsed < 600:
                     msg = "Alert cooldown active (10 min)."
                     _record_email_attempt(trigger_reason, False, msg)
                     return False, msg
@@ -848,6 +991,35 @@ st.markdown("""
             min-width: 45% !important; flex: 1 1 45% !important;
         }
     }
+
+    /* =========================================================
+       TOAST TIMING — keep toasts visible for 5 seconds
+       Streamlit auto-dismisses toasts after ~4s; we extend the
+       fade-out delay to 5s and add a gold countdown bar.
+       ========================================================= */
+    div[data-testid="stToast"] {
+        animation-duration: 0.3s, 0.5s !important;
+        animation-delay: 0s, 5s !important;
+        position: relative !important;
+        overflow: hidden !important;
+    }
+
+    /* Gold countdown bar inside each toast */
+    div[data-testid="stToast"]::after {
+        content: "" !important;
+        position: absolute !important;
+        left: 0 !important;
+        bottom: 0 !important;
+        height: 2px !important;
+        background: linear-gradient(90deg, #C6A75E 0%, #A98A44 100%) !important;
+        animation: toast-countdown 5s linear forwards !important;
+        border-radius: 0 0 6px 6px !important;
+    }
+
+    @keyframes toast-countdown {
+        0%   { width: 100%; }
+        100% { width: 0%; }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -1069,6 +1241,9 @@ if page == "📤   Update from Excel":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    progress_ph = st.empty()
+    result_ph = st.empty()
+
     if st.button("🚀 Update Inventory", key="btn1", type="primary", use_container_width=True):
         if password1.lower() == "kishan":
             st.success("👑 Welcome back, boss. You *are* the system.")
@@ -1079,6 +1254,11 @@ if page == "📤   Update from Excel":
             st.warning(funny(NO_FILE_LINES))
         else:
             try:
+                with progress_ph.container():
+                    st.markdown('<div id="upload-progress-anchor"></div>', unsafe_allow_html=True)
+                    st.info("⏳ Upload in progress — please wait…")
+                auto_scroll_to("upload-progress-anchor", delay=150)
+
                 with st.spinner("Updating inventory..."):
                     ops.download_excel_data('old')
                     collection.drop()
@@ -1112,26 +1292,31 @@ if page == "📤   Update from Excel":
                             duplicates += 1
                         progress.progress((index + 1) / len(df))
 
-                    st.success(f"✅ Inventory updated — **{inserted}** items inserted, **{duplicates}** duplicates skipped.")
+                progress_ph.empty()
 
-                    # 📧 Email alert after re-upload
-                    ok, msg = maybe_send_low_stock_alert(
-                        trigger_reason="Excel re-upload"
-                    )
-                    if ok:
-                        st.toast(f"📧 Low-stock alert emailed — {msg}", icon="📬")
-                    else:
-                        st.toast(f"📧 Alert not sent: {msg}", icon="⚠️")
+                with result_ph.container():
+                    st.markdown('<div id="upload-success-anchor"></div>', unsafe_allow_html=True)
+                    show_upload_success_animated(inserted, duplicates, len(df))
 
-                    if inserted >= 100:
-                        st.balloons()
-                        st.toast(f"🎊 {inserted} items in one go, Kishan! Legendary upload.", icon="🏆")
-                    elif inserted >= 30:
-                        st.balloons()
-                        st.toast("📦 Solid upload — nice work, Kishan.", icon="👍")
-                    else:
-                        st.toast("✅ Uploaded. Small batch, no drama.", icon="📎")
+                auto_scroll_to("upload-success-anchor", delay=400)
+
+                ok, msg = maybe_send_low_stock_alert(
+                    trigger_reason="Excel re-upload"
+                )
+                if ok:
+                    st.toast(f"📧 Low-stock alert emailed — {msg}", icon="📬")
+                else:
+                    st.toast(f"📧 Alert not sent: {msg}", icon="⚠️")
+
+                if inserted >= 100:
+                    st.toast(f"🎊 {inserted} items in one go, Kishan! Legendary upload.", icon="🏆")
+                elif inserted >= 30:
+                    st.toast("📦 Solid upload — nice work, Kishan.", icon="👍")
+                else:
+                    st.toast("✅ Uploaded. Small batch, no drama.", icon="📎")
+
             except Exception as e:
+                progress_ph.empty()
                 st.error(f"❌ Update failed: {e}")
 
 # ---------------------------------------------------------
@@ -1148,6 +1333,8 @@ elif page == "⚙️   Update by DN-60":
         dn60_count = st.number_input("🔧 Number of valves", min_value=1, value=10, step=1, key="n2")
 
     st.markdown("<br>", unsafe_allow_html=True)
+
+    dn60_result_ph = st.empty()
 
     if st.button("⚙️ Build Valves", key="btn2", type="primary", use_container_width=True):
         if password2.lower() == "kishan":
@@ -1209,10 +1396,13 @@ elif page == "⚙️   Update by DN-60":
                             "New":       new_count,
                         })
 
-                    st.success(f"✅ Stock updated for building **{dn60_count}** valves!")
-                    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+                    with dn60_result_ph.container():
+                        st.markdown('<div id="dn60-result-anchor"></div>', unsafe_allow_html=True)
+                        st.success(f"✅ Stock updated for building **{dn60_count}** valves!")
+                        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
-                    # 📧 Email alert if any part dropped below threshold
+                    auto_scroll_to("dn60-result-anchor", delay=350)
+
                     ok, msg = maybe_send_low_stock_alert(
                         trigger_reason=f"DN-60 build ({dn60_count} valves)"
                     )
@@ -1229,6 +1419,8 @@ elif page == "⚙️   Update by DN-60":
 elif page == "📊   Check Production":
     st.markdown('<div class="section-header">📊 DN-60 Production Capacity</div>', unsafe_allow_html=True)
     st.markdown('<div class="section-sub">How many DN-60 valves can be produced with the current stock?</div>', unsafe_allow_html=True)
+
+    prod_result_ph = st.empty()
 
     if st.button("🔄 Check Capacity", key="btn3", type="primary", use_container_width=True):
         try:
@@ -1253,48 +1445,53 @@ elif page == "📊   Check Production":
             if available[limiting_part] == 0:
                 st.toast(funny(ZERO_STOCK_LINES), icon="😬")
 
-            c1, c2, c3 = st.columns(3)
-            with c1:
-                st.markdown(f"""
-                <div class="metric-card accent-gold">
-                    <div class="metric-icon">🎯</div>
-                    <p class="metric-label">Max Valves</p>
-                    <p class="metric-value gold">{max_valves}</p>
-                </div>
-                """, unsafe_allow_html=True)
-            with c2:
-                st.markdown(f"""
-                <div class="metric-card accent-warn">
-                    <div class="metric-icon">⚠️</div>
-                    <p class="metric-label">Limiting Part</p>
-                    <p class="metric-value warn" style="font-size:1.05rem;">{part_names[limiting_part]}</p>
-                </div>
-                """, unsafe_allow_html=True)
-            with c3:
-                st.markdown(f"""
-                <div class="metric-card accent-danger">
-                    <div class="metric-icon">📦</div>
-                    <p class="metric-label">Stock of Limiting Part</p>
-                    <p class="metric-value danger">{available[limiting_part]}</p>
-                </div>
-                """, unsafe_allow_html=True)
+            with prod_result_ph.container():
+                st.markdown('<div id="prod-result-anchor"></div>', unsafe_allow_html=True)
 
-            st.markdown("<br>", unsafe_allow_html=True)
+                c1, c2, c3 = st.columns(3)
+                with c1:
+                    st.markdown(f"""
+                    <div class="metric-card accent-gold">
+                        <div class="metric-icon">🎯</div>
+                        <p class="metric-label">Max Valves</p>
+                        <p class="metric-value gold">{max_valves}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with c2:
+                    st.markdown(f"""
+                    <div class="metric-card accent-warn">
+                        <div class="metric-icon">⚠️</div>
+                        <p class="metric-label">Limiting Part</p>
+                        <p class="metric-value warn" style="font-size:1.05rem;">{part_names[limiting_part]}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with c3:
+                    st.markdown(f"""
+                    <div class="metric-card accent-danger">
+                        <div class="metric-icon">📦</div>
+                        <p class="metric-label">Stock of Limiting Part</p>
+                        <p class="metric-value danger">{available[limiting_part]}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-            rows = []
-            for part in sorted(DN60_PART_NUM, key=int):
-                rows.append({
-                    "Part":       part,
-                    "Part Name":  part_names[part],
-                    "Stock":      available[part],
-                    "Per Valve":  DN60_PART_NUM[part],
-                    "Can Make":   limits[part],
-                    "Status":     "⚠️ LIMITING" if part == limiting_part else "✅ OK",
-                })
+                st.markdown("<br>", unsafe_allow_html=True)
 
-            st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+                rows = []
+                for part in sorted(DN60_PART_NUM, key=int):
+                    rows.append({
+                        "Part":       part,
+                        "Part Name":  part_names[part],
+                        "Stock":      available[part],
+                        "Per Valve":  DN60_PART_NUM[part],
+                        "Can Make":   limits[part],
+                        "Status":     "⚠️ LIMITING" if part == limiting_part else "✅ OK",
+                    })
 
-            st.info(f"**Bottleneck:** {part_names[limiting_part]} — need **{DN60_PART_NUM[limiting_part]}/valve**, have **{available[limiting_part]}**")
+                st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+                st.info(f"**Bottleneck:** {part_names[limiting_part]} — need **{DN60_PART_NUM[limiting_part]}/valve**, have **{available[limiting_part]}**")
+
+            auto_scroll_to("prod-result-anchor", delay=350)
         except Exception as e:
             st.error(f"❌ Error: {e}")
 
@@ -1306,6 +1503,8 @@ elif page == "🧮   Required Items":
     st.markdown('<div class="section-sub">Calculate how many parts to order to build N valves.</div>', unsafe_allow_html=True)
 
     target = st.number_input("🎯 Target number of DN-60 valves", min_value=1, value=100, step=1, key="target4")
+
+    req_result_ph = st.empty()
 
     if st.button("🧮 Calculate", key="btn4", type="primary", use_container_width=True):
         try:
@@ -1341,46 +1540,51 @@ elif page == "🧮   Required Items":
                     "Status":       "🛒 ORDER" if shortfall > 0 else "✅ OK",
                 })
 
-            c1, c2 = st.columns(2)
-            with c1:
-                st.markdown(f"""
-                <div class="metric-card accent-gold">
-                    <div class="metric-icon">🎯</div>
-                    <p class="metric-label">Target</p>
-                    <p class="metric-value gold">{target}</p>
-                </div>
-                """, unsafe_allow_html=True)
-            with c2:
-                st.markdown(f"""
-                <div class="metric-card {'accent-danger' if total_short > 0 else 'accent-ok'}">
-                    <div class="metric-icon">🛒</div>
-                    <p class="metric-label">Parts to Order</p>
-                    <p class="metric-value {'danger' if total_short > 0 else 'success'}">{total_short}</p>
-                </div>
-                """, unsafe_allow_html=True)
+            with req_result_ph.container():
+                st.markdown('<div id="req-result-anchor"></div>', unsafe_allow_html=True)
 
-            st.markdown("<br>", unsafe_allow_html=True)
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.markdown(f"""
+                    <div class="metric-card accent-gold">
+                        <div class="metric-icon">🎯</div>
+                        <p class="metric-label">Target</p>
+                        <p class="metric-value gold">{target}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with c2:
+                    st.markdown(f"""
+                    <div class="metric-card {'accent-danger' if total_short > 0 else 'accent-ok'}">
+                        <div class="metric-icon">🛒</div>
+                        <p class="metric-label">Parts to Order</p>
+                        <p class="metric-value {'danger' if total_short > 0 else 'success'}">{total_short}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-            df = pd.DataFrame(rows)
-            st.dataframe(df, use_container_width=True, hide_index=True, height=600)
+                st.markdown("<br>", unsafe_allow_html=True)
 
-            if total_short == 0:
-                st.success("✅ You already have enough stock! No order needed.")
-            else:
-                if total_short >= 8:
-                    st.warning(f"🛒 **ORDER LIST:** — {total_short} parts to order. Kishan, your wallet just fainted.")
-                elif total_short >= 4:
-                    st.warning(f"🛒 **ORDER LIST:** — {total_short} parts. Manageable, but not fun.")
+                df = pd.DataFrame(rows)
+                st.dataframe(df, use_container_width=True, hide_index=True, height=600)
+
+                if total_short == 0:
+                    st.success("✅ You already have enough stock! No order needed.")
                 else:
-                    st.warning("🛒 **ORDER LIST:**")
+                    if total_short >= 8:
+                        st.warning(f"🛒 **ORDER LIST:** — {total_short} parts to order. Kishan, your wallet just fainted.")
+                    elif total_short >= 4:
+                        st.warning(f"🛒 **ORDER LIST:** — {total_short} parts. Manageable, but not fun.")
+                    else:
+                        st.warning("🛒 **ORDER LIST:**")
 
-                order_rows = [r for r in rows if r["Order"] > 0]
-                for r in order_rows:
-                    st.write(
-                        f"• **{r['Part Name']}** "
-                        f"_(Category: {r['Category']} · Sub: {r['Subcategory']})_ "
-                        f"→ order **{r['Order']}** nos"
-                    )
+                    order_rows = [r for r in rows if r["Order"] > 0]
+                    for r in order_rows:
+                        st.write(
+                            f"• **{r['Part Name']}** "
+                            f"_(Category: {r['Category']} · Sub: {r['Subcategory']})_ "
+                            f"→ order **{r['Order']}** nos"
+                        )
+
+            auto_scroll_to("req-result-anchor", delay=350)
         except Exception as e:
             st.error(f"❌ Error: {e}")
 
@@ -1567,79 +1771,84 @@ elif page == "📋   View Inventory":
         unsafe_allow_html=True,
     )
 
+    flash_ph = st.empty()
+
     _flash = st.session_state.pop("adj_flash", None)
     if _flash:
-        if _flash["status"] == "ok":
-            st.markdown(
-                f"""
-                <div style="
-                    background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
-                    border: 1.5px solid #059669;
-                    border-left: 5px solid #047857;
-                    border-radius: 10px;
-                    padding: 0.9rem 1.15rem;
-                    margin: 0.3rem 0 1rem 0;
-                    box-shadow: 0 2px 8px -2px rgba(5,150,105,0.25);
-                    font-family: 'Inter', sans-serif;
-                ">
+        with flash_ph.container():
+            st.markdown('<div id="adj-flash-anchor"></div>', unsafe_allow_html=True)
+            if _flash["status"] == "ok":
+                st.markdown(
+                    f"""
                     <div style="
-                        display: flex; align-items: center; gap: 0.5rem;
-                        font-weight: 700; color: #065F46;
-                        font-size: 0.95rem; margin-bottom: 0.35rem;
+                        background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
+                        border: 1.5px solid #059669;
+                        border-left: 5px solid #047857;
+                        border-radius: 10px;
+                        padding: 0.9rem 1.15rem;
+                        margin: 0.3rem 0 1rem 0;
+                        box-shadow: 0 2px 8px -2px rgba(5,150,105,0.25);
+                        font-family: 'Inter', sans-serif;
                     ">
-                        <span style="font-size:1.1rem;">✅</span>
-                        Stock Updated Successfully
-                    </div>
-                    <div style="
-                        color: #047857; font-size: 0.88rem; line-height: 1.55;
-                    ">
-                        <span style="
-                            font-family: 'JetBrains Mono', monospace;
-                            background: rgba(5,150,105,0.12);
-                            padding: 2px 8px; border-radius: 5px;
+                        <div style="
+                            display: flex; align-items: center; gap: 0.5rem;
                             font-weight: 700; color: #065F46;
-                        ">{_flash['code']}</span>
-                        &nbsp;—&nbsp;
-                        <strong style="color: #065F46;">{_flash['name']}</strong>
-                        <br>
-                        <span style="opacity: 0.85;">
-                            Quantity:
-                            <strong>{_flash['old']}</strong>
-                            &nbsp;→&nbsp;
-                            <strong style="color:#047857;">{_flash['new']}</strong>
-                            &nbsp;
+                            font-size: 0.95rem; margin-bottom: 0.35rem;
+                        ">
+                            <span style="font-size:1.1rem;">✅</span>
+                            Stock Updated Successfully
+                        </div>
+                        <div style="
+                            color: #047857; font-size: 0.88rem; line-height: 1.55;
+                        ">
                             <span style="
-                                background: rgba(5,150,105,0.18);
-                                padding: 1px 7px; border-radius: 4px;
                                 font-family: 'JetBrains Mono', monospace;
-                                font-weight: 700;
-                            ">{_flash['diff']}</span>
-                        </span>
-                        <br>
-                        <span style="opacity: 0.85; font-style: italic;">
-                            Reason: {_flash.get('reason', '—')}
-                        </span>
+                                background: rgba(5,150,105,0.12);
+                                padding: 2px 8px; border-radius: 5px;
+                                font-weight: 700; color: #065F46;
+                            ">{_flash['code']}</span>
+                            &nbsp;—&nbsp;
+                            <strong style="color: #065F46;">{_flash['name']}</strong>
+                            <br>
+                            <span style="opacity: 0.85;">
+                                Quantity:
+                                <strong>{_flash['old']}</strong>
+                                &nbsp;→&nbsp;
+                                <strong style="color:#047857;">{_flash['new']}</strong>
+                                &nbsp;
+                                <span style="
+                                    background: rgba(5,150,105,0.18);
+                                    padding: 1px 7px; border-radius: 4px;
+                                    font-family: 'JetBrains Mono', monospace;
+                                    font-weight: 700;
+                                ">{_flash['diff']}</span>
+                            </span>
+                            <br>
+                            <span style="opacity: 0.85; font-style: italic;">
+                                Reason: {_flash.get('reason', '—')}
+                            </span>
+                        </div>
                     </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        else:
-            st.markdown(
-                f"""
-                <div style="
-                    background: #EFF6FF; border: 1.5px solid #3B82F6;
-                    border-left: 5px solid #1D4ED8; border-radius: 10px;
-                    padding: 0.85rem 1.1rem; margin: 0.3rem 0 1rem 0;
-                    color: #1E40AF; font-weight: 600; font-size: 0.88rem;
-                    font-family: 'Inter', sans-serif;
-                ">
-                    ℹ️ No change — <code>{_flash['code']}</code>
-                    is still <strong>{_flash['new']}</strong>.
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+                    """,
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.markdown(
+                    f"""
+                    <div style="
+                        background: #EFF6FF; border: 1.5px solid #3B82F6;
+                        border-left: 5px solid #1D4ED8; border-radius: 10px;
+                        padding: 0.85rem 1.1rem; margin: 0.3rem 0 1rem 0;
+                        color: #1E40AF; font-weight: 600; font-size: 0.88rem;
+                        font-family: 'Inter', sans-serif;
+                    ">
+                        ℹ️ No change — <code>{_flash['code']}</code>
+                        is still <strong>{_flash['new']}</strong>.
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+        auto_scroll_to("adj-flash-anchor", delay=300)
 
     _flash_err = st.session_state.pop("adj_flash_err", None)
     if _flash_err:
@@ -1768,7 +1977,6 @@ elif page == "📋   View Inventory":
                         "status": "ok" if new_qty != old_qty else "same",
                     }
 
-                    # 📧 Email alert whenever the item is low after the change
                     if is_low_stock(adj_item, new_qty):
                         ok, msg = maybe_send_low_stock_alert(
                             trigger_reason=f"Adjust {adj_item} ({old_qty}→{new_qty})"
@@ -2045,7 +2253,6 @@ elif page == "📜   Audit Log":
         unsafe_allow_html=True,
     )
 
-    # ---------- Password gate ----------
     if not st.session_state.get("audit_authed", False):
         st.info("🔒 **Enter the admin password to view the audit log.**")
 
@@ -2069,19 +2276,16 @@ elif page == "📜   Audit Log":
 
         st.stop()
 
-    # ---------- Lock button ----------
     _, col_lock = st.columns([4, 1])
     with col_lock:
         if st.button("🔒 Lock", key="audit_lock_btn", use_container_width=True):
             st.session_state["audit_authed"] = False
             st.rerun()
 
-    # ---------- Check history collection ----------
     if history_collection is None:
         st.error("⚠️ History collection unavailable.")
         st.stop()
 
-    # ---------- Load button ----------
     col_load, col_info = st.columns([1, 3])
 
     with col_load:
@@ -2097,7 +2301,6 @@ elif page == "📜   Audit Log":
             cached_at = st.session_state.get("audit_loaded_at", "")
             st.caption(f"✔️ Data loaded · {cached_at}")
 
-    # ---------- Fetch ----------
     if audit_load_clicked or "audit_data" not in st.session_state:
         try:
             rows = list(history_collection.find({}, {"_id": 0}))
@@ -2124,7 +2327,6 @@ elif page == "📜   Audit Log":
         st.info("📭 No audit entries yet. Make some changes to start logging.")
         st.stop()
 
-    # ---------- Summary cards ----------
     total_entries = len(df_audit)
     adds = int(df_audit[df_audit["Change"] > 0]["Change"].sum())
     rems = int(df_audit[df_audit["Change"] < 0]["Change"].sum())
@@ -2166,7 +2368,6 @@ elif page == "📜   Audit Log":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ---------- Filters ----------
     st.markdown(
         '<div class="section-header" style="font-size:0.95rem; margin-bottom:0.5rem;">'
         '🔍 Filter Audit Log</div>',
@@ -2216,7 +2417,6 @@ elif page == "📜   Audit Log":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ---------- Table ----------
     if df_view.empty:
         st.info("🔍 No audit entries match your filters.")
     else:
@@ -2279,7 +2479,6 @@ elif page == "📜   Audit Log":
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # ---------- Download ----------
     buffer_a = io.BytesIO()
     with pd.ExcelWriter(buffer_a, engine="openpyxl") as writer:
         df_view.to_excel(writer, index=False, sheet_name="Audit Log")
@@ -2294,6 +2493,13 @@ elif page == "📜   Audit Log":
         key="dl_audit_btn",
         use_container_width=True,
     )
+
+# =========================================================
+#  📜 AUTO SCROLL ON PAGE NAVIGATION
+# =========================================================
+if st.session_state.get("_last_page") != page:
+    st.session_state["_last_page"] = page
+    scroll_to_top(delay=150)
 
 # =========================================================
 #  🌙 LATE-NIGHT EASTER EGG
