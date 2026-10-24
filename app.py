@@ -175,14 +175,16 @@ except:
 
 
 def log_history(item_code, item_name, old_qty, new_qty, reason):
-    if history_collection:
+    if history_collection is not None:  # <--- THE FIX
         try:
             history_collection.insert_one(
                 {"Item_code": str(item_code).strip(), "Item_name": str(item_name).strip().upper(),
                  "Old_Qty": int(old_qty), "New_Qty": int(new_qty), "Change": int(new_qty) - int(old_qty),
                  "Reason": str(reason), "Timestamp": now_ist().strftime("%d-%m-%Y %H:%M:%S")})
-        except:
-            pass
+        except Exception as e:
+            # It's highly recommended to print the error instead of a bare 'pass'
+            # so you can see if the insert is failing in the Streamlit logs.
+            print(f"Failed to log history: {e}")
 
 
 # =========================================================
