@@ -1,0 +1,14 @@
+Mongo Query
+
+==> To copy collection within Database.
+db.Item_Inventory.aggregate([
+	{ $out: "Item_Inventory_Backup_24-10-26" }
+	])
+----------------------------------------------------------------------------------------
+==> To update records with WHERE condition in collection.
+
+db.Item_Inventory.updateMany(
+    { Item_subcategory: "MAIN HUB" },
+    { $set: { Item_subcategory: "STATIONARY" } }
+)
+----------------------------------------------------------------------------------------

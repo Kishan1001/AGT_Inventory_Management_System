@@ -2,11 +2,12 @@
 # ---------------------------------------------------------
 #  STREAMLIT WEB UI — Enterprise Dashboard
 #  Palette: #1F2A44 (Navy) · #E8DCC8 (Cream) · #C6A75E (Gold)
-#  v38: 5-second toasts + gold countdown bar
+#  v39: manual adjustment auto-scroll fixed
 #  Built with ❤️ for Kishan
 # ---------------------------------------------------------
 import io
 import random
+import time
 from datetime import datetime, timedelta, timezone
 
 import pandas as pd
@@ -310,10 +311,10 @@ def log_history(item_code, item_name, old_qty, new_qty, reason):
         history_collection.insert_one({
             "Item_code": str(item_code).strip(),
             "Item_name": str(item_name).strip().upper(),
-            "Old_Qty":   int(old_qty),
-            "New_Qty":   int(new_qty),
-            "Change":    int(new_qty) - int(old_qty),
-            "Reason":    str(reason),
+            "Old_Qty": int(old_qty),
+            "New_Qty": int(new_qty),
+            "Change": int(new_qty) - int(old_qty),
+            "Reason": str(reason),
             "Timestamp": now_ist().strftime("%d-%m-%Y %H:%M:%S"),
         })
     except Exception:
@@ -324,7 +325,6 @@ def log_history(item_code, item_name, old_qty, new_qty, reason):
 #  😄 FUN ZONE — Kishan Edition
 # =========================================================
 FUN_MODE = False
-
 
 WRONG_PASSWORD_LINES = [
     "🚨 Nice try, hacker! But this isn't your inventory, mate.",
@@ -1035,7 +1035,6 @@ if "current_page" not in st.session_state:
 #  SIDEBAR — Reference style
 # =========================================================
 with st.sidebar:
-
     # ---------- Branding ----------
     st.markdown(
         '<div style="display:flex; align-items:center; gap:12px; '
@@ -1229,7 +1228,8 @@ st.markdown("<br>", unsafe_allow_html=True)
 # ---------------------------------------------------------
 if page == "📤   Update from Excel":
     st.markdown('<div class="section-header">📤 Update Inventory from Excel</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">Upload your Item_Sheet.xlsx to replace the entire inventory.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">Upload your Item_Sheet.xlsx to replace the entire inventory.</div>',
+                unsafe_allow_html=True)
 
     st.warning("⚠️ **Warning:** This will DROP the existing collection and re-insert all items from the uploaded file.")
 
@@ -1324,7 +1324,8 @@ if page == "📤   Update from Excel":
 # ---------------------------------------------------------
 elif page == "⚙️   Update by DN-60":
     st.markdown('<div class="section-header">⚙️ Update by DN-60 Valve Count</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">Subtract parts required to build a given number of DN-60 valves.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">Subtract parts required to build a given number of DN-60 valves.</div>',
+                unsafe_allow_html=True)
 
     col_a, col_b = st.columns([2, 1])
     with col_a:
@@ -1373,7 +1374,7 @@ elif page == "⚙️   Update by DN-60":
                         doc = collection.find_one({"Item_code": part_num})
 
                         old_count = int(doc['Quantity'])
-                        used      = dn60_count * per_valve
+                        used = dn60_count * per_valve
                         new_count = old_count - used
 
                         collection.update_one(
@@ -1389,11 +1390,11 @@ elif page == "⚙️   Update by DN-60":
                         )
 
                         rows.append({
-                            "#":         part_num,
+                            "#": part_num,
                             "Item Name": doc['Item_name'],
-                            "Old":       old_count,
-                            "Used":      used,
-                            "New":       new_count,
+                            "Old": old_count,
+                            "Used": used,
+                            "New": new_count,
                         })
 
                     with dn60_result_ph.container():
@@ -1418,7 +1419,8 @@ elif page == "⚙️   Update by DN-60":
 # ---------------------------------------------------------
 elif page == "📊   Check Production":
     st.markdown('<div class="section-header">📊 DN-60 Production Capacity</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">How many DN-60 valves can be produced with the current stock?</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">How many DN-60 valves can be produced with the current stock?</div>',
+                unsafe_allow_html=True)
 
     prod_result_ph = st.empty()
 
@@ -1430,16 +1432,16 @@ elif page == "📊   Check Production":
                 item = collection.find_one({"Item_code": part})
                 if item:
                     stock = int(item.get("Quantity", 0))
-                    name  = item.get("Item_name", f"Part {part}")
+                    name = item.get("Item_name", f"Part {part}")
                 else:
                     stock = 0
-                    name  = f"Part {part} (not found)"
+                    name = f"Part {part} (not found)"
 
-                available[part]  = stock
-                limits[part]     = stock // qty_per_valve
+                available[part] = stock
+                limits[part] = stock // qty_per_valve
                 part_names[part] = name
 
-            max_valves    = min(limits.values())
+            max_valves = min(limits.values())
             limiting_part = min(limits, key=limits.get)
 
             if available[limiting_part] == 0:
@@ -1479,17 +1481,18 @@ elif page == "📊   Check Production":
                 rows = []
                 for part in sorted(DN60_PART_NUM, key=int):
                     rows.append({
-                        "Part":       part,
-                        "Part Name":  part_names[part],
-                        "Stock":      available[part],
-                        "Per Valve":  DN60_PART_NUM[part],
-                        "Can Make":   limits[part],
-                        "Status":     "⚠️ LIMITING" if part == limiting_part else "✅ OK",
+                        "Part": part,
+                        "Part Name": part_names[part],
+                        "Stock": available[part],
+                        "Per Valve": DN60_PART_NUM[part],
+                        "Can Make": limits[part],
+                        "Status": "⚠️ LIMITING" if part == limiting_part else "✅ OK",
                     })
 
                 st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
-                st.info(f"**Bottleneck:** {part_names[limiting_part]} — need **{DN60_PART_NUM[limiting_part]}/valve**, have **{available[limiting_part]}**")
+                st.info(
+                    f"**Bottleneck:** {part_names[limiting_part]} — need **{DN60_PART_NUM[limiting_part]}/valve**, have **{available[limiting_part]}**")
 
             auto_scroll_to("prod-result-anchor", delay=350)
         except Exception as e:
@@ -1500,7 +1503,8 @@ elif page == "📊   Check Production":
 # ---------------------------------------------------------
 elif page == "🧮   Required Items":
     st.markdown('<div class="section-header">🧮 Parts Required for Target Quantity</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">Calculate how many parts to order to build N valves.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">Calculate how many parts to order to build N valves.</div>',
+                unsafe_allow_html=True)
 
     target = st.number_input("🎯 Target number of DN-60 valves", min_value=1, value=100, step=1, key="target4")
 
@@ -1513,31 +1517,31 @@ elif page == "🧮   Required Items":
             for part, per_valve in DN60_PART_NUM.items():
                 item = collection.find_one({"Item_code": part})
                 if item:
-                    stock       = int(item.get("Quantity", 0))
-                    name        = item.get("Item_name", f"Part {part}")
-                    category    = item.get("Item_category", "—")
+                    stock = int(item.get("Quantity", 0))
+                    name = item.get("Item_name", f"Part {part}")
+                    category = item.get("Item_category", "—")
                     subcategory = item.get("Item_subcategory", "—")
                 else:
-                    stock       = 0
-                    name        = f"Part {part} (not found)"
-                    category    = "—"
+                    stock = 0
+                    name = f"Part {part} (not found)"
+                    category = "—"
                     subcategory = "—"
 
-                needed    = per_valve * target
+                needed = per_valve * target
                 shortfall = max(0, needed - stock)
                 if shortfall > 0:
                     total_short += 1
 
                 rows.append({
-                    "Part":         part,
-                    "Part Name":    name,
-                    "Category":     category,
-                    "Subcategory":  subcategory,
-                    "Per":          per_valve,
-                    "Stock":        stock,
-                    "Needed":       needed,
-                    "Order":        shortfall,
-                    "Status":       "🛒 ORDER" if shortfall > 0 else "✅ OK",
+                    "Part": part,
+                    "Part Name": name,
+                    "Category": category,
+                    "Subcategory": subcategory,
+                    "Per": per_valve,
+                    "Stock": stock,
+                    "Needed": needed,
+                    "Order": shortfall,
+                    "Status": "🛒 ORDER" if shortfall > 0 else "✅ OK",
                 })
 
             with req_result_ph.container():
@@ -1570,7 +1574,8 @@ elif page == "🧮   Required Items":
                     st.success("✅ You already have enough stock! No order needed.")
                 else:
                     if total_short >= 8:
-                        st.warning(f"🛒 **ORDER LIST:** — {total_short} parts to order. Kishan, your wallet just fainted.")
+                        st.warning(
+                            f"🛒 **ORDER LIST:** — {total_short} parts to order. Kishan, your wallet just fainted.")
                     elif total_short >= 4:
                         st.warning(f"🛒 **ORDER LIST:** — {total_short} parts. Manageable, but not fun.")
                     else:
@@ -1697,8 +1702,8 @@ elif page == "📋   View Inventory":
     if search_text.strip():
         q = search_text.strip().lower()
         mask = (
-            filtered["Item_name"].astype(str).str.lower().str.contains(q, na=False)
-            | filtered["Item_code"].astype(str).str.lower().str.contains(q, na=False)
+                filtered["Item_name"].astype(str).str.lower().str.contains(q, na=False)
+                | filtered["Item_code"].astype(str).str.lower().str.contains(q, na=False)
         )
         filtered = filtered[mask]
 
@@ -1771,7 +1776,13 @@ elif page == "📋   View Inventory":
         unsafe_allow_html=True,
     )
 
+    # Container to hold the loading state
+    adj_progress_ph = st.empty()
     flash_ph = st.empty()
+
+    # 🚨 Auto-scroll fix for success flash
+    if st.session_state.pop("scroll_to_adj_flash", False):
+        auto_scroll_to("adj-flash-anchor", delay=250)
 
     _flash = st.session_state.pop("adj_flash", None)
     if _flash:
@@ -1848,7 +1859,6 @@ elif page == "📋   View Inventory":
                     """,
                     unsafe_allow_html=True,
                 )
-        auto_scroll_to("adj-flash-anchor", delay=300)
 
     _flash_err = st.session_state.pop("adj_flash_err", None)
     if _flash_err:
@@ -1931,10 +1941,17 @@ elif page == "📋   View Inventory":
                 st.session_state.pop("inv_data", None)
                 st.rerun()
             elif not adj_reason.strip():
-                st.session_state["adj_flash_err"] = "⚠️ Please enter a reason for this change — it's required for the audit log."
+                st.session_state[
+                    "adj_flash_err"] = "⚠️ Please enter a reason for this change — it's required for the audit log."
                 st.session_state.pop("inv_data", None)
                 st.rerun()
             else:
+                # 1. Show loading state and scroll to it
+                with adj_progress_ph.container():
+                    st.markdown('<div id="adj-progress-anchor"></div>', unsafe_allow_html=True)
+                    st.info("⏳ Updating stock — please wait…")
+                auto_scroll_to("adj-progress-anchor", delay=150)
+
                 doc = collection.find_one({"Item_code": adj_item})
                 if not doc:
                     st.session_state["adj_flash_err"] = f"Item {adj_item} not found in DB."
@@ -1988,6 +2005,10 @@ elif page == "📋   View Inventory":
 
                     st.session_state.pop("adj_reason_input", None)
                     st.session_state.pop("inv_data", None)
+
+                    # 2. Flag for auto-scroll after rerun
+                    st.session_state["scroll_to_adj_flash"] = True
+                    time.sleep(1)  # Let the user see the loading spinner
                     st.rerun()
 
     st.markdown("<br>", unsafe_allow_html=True)
@@ -2047,9 +2068,9 @@ elif page == "⚠️   Low Stock Items":
     _LOW_CACHE_VERSION = 3
 
     if (
-        low_load_clicked
-        or "low_data" not in st.session_state
-        or st.session_state.get("low_cache_version") != _LOW_CACHE_VERSION
+            low_load_clicked
+            or "low_data" not in st.session_state
+            or st.session_state.get("low_cache_version") != _LOW_CACHE_VERSION
     ):
         try:
             _all = list(collection.find(
@@ -2094,7 +2115,7 @@ elif page == "⚠️   Low Stock Items":
         st.stop()
 
     total_low_items = len(df_low)
-    out_of_stock    = int((df_low["Quantity"] == 0).sum())
+    out_of_stock = int((df_low["Quantity"] == 0).sum())
 
     c1, c2 = st.columns(2)
 
@@ -2163,8 +2184,8 @@ elif page == "⚠️   Low Stock Items":
     if search_low.strip():
         q = search_low.strip().lower()
         mask = (
-            df_filtered["Item_name"].astype(str).str.lower().str.contains(q, na=False)
-            | df_filtered["Item_code"].astype(str).str.lower().str.contains(q, na=False)
+                df_filtered["Item_name"].astype(str).str.lower().str.contains(q, na=False)
+                | df_filtered["Item_code"].astype(str).str.lower().str.contains(q, na=False)
         )
         df_filtered = df_filtered[mask]
 
@@ -2183,6 +2204,7 @@ elif page == "⚠️   Low Stock Items":
             if pd.isna(v) or str(v).lower() in ("nan", "none", "null", "nat"):
                 return "—"
             return str(v)
+
 
         rows_html = []
         for _, r in df_filtered.iterrows():
@@ -2203,19 +2225,19 @@ elif page == "⚠️   Low Stock Items":
             )
 
         html_table = (
-            '<table class="inv-table">'
-            '<thead><tr>'
-            '<th>Code</th>'
-            '<th>Item Name</th>'
-            '<th>Category</th>'
-            '<th>Subcategory</th>'
-            '<th>Location</th>'
-            '<th style="text-align:right;">Qty</th>'
-            '<th style="text-align:right;">Min Required</th>'
-            '<th style="text-align:right;">Updated (IST)</th>'
-            '</tr></thead>'
-            '<tbody>' + "".join(rows_html) + '</tbody>'
-            '</table>'
+                '<table class="inv-table">'
+                '<thead><tr>'
+                '<th>Code</th>'
+                '<th>Item Name</th>'
+                '<th>Category</th>'
+                '<th>Subcategory</th>'
+                '<th>Location</th>'
+                '<th style="text-align:right;">Qty</th>'
+                '<th style="text-align:right;">Min Required</th>'
+                '<th style="text-align:right;">Updated (IST)</th>'
+                '</tr></thead>'
+                '<tbody>' + "".join(rows_html) + '</tbody>'
+                                                 '</table>'
         )
 
         st.markdown(
@@ -2400,9 +2422,9 @@ elif page == "📜   Audit Log":
     if audit_search.strip():
         q = audit_search.strip().lower()
         mask = (
-            df_view["Item_code"].astype(str).str.lower().str.contains(q, na=False)
-            | df_view["Item_name"].astype(str).str.lower().str.contains(q, na=False)
-            | df_view["Reason"].astype(str).str.lower().str.contains(q, na=False)
+                df_view["Item_code"].astype(str).str.lower().str.contains(q, na=False)
+                | df_view["Item_name"].astype(str).str.lower().str.contains(q, na=False)
+                | df_view["Reason"].astype(str).str.lower().str.contains(q, na=False)
         )
         df_view = df_view[mask]
 
@@ -2431,10 +2453,12 @@ elif page == "📜   Audit Log":
                 return "color:#EF4444; font-weight:700; text-align:right;"
             return "color:#6B7280; text-align:right;"
 
+
         def clean(v):
             if pd.isna(v) or str(v).lower() in ("nan", "none", "null", "nat", ""):
                 return "—"
             return str(v)
+
 
         rows_html = []
         for _, r in df_view.iterrows():
@@ -2458,18 +2482,18 @@ elif page == "📜   Audit Log":
             )
 
         html_table = (
-            '<table class="inv-table">'
-            '<thead><tr>'
-            '<th>When (IST)</th>'
-            '<th>Code</th>'
-            '<th>Item Name</th>'
-            '<th style="text-align:right;">Old</th>'
-            '<th style="text-align:right;">New</th>'
-            '<th style="text-align:right;">Δ</th>'
-            '<th>Reason</th>'
-            '</tr></thead>'
-            '<tbody>' + "".join(rows_html) + '</tbody>'
-            '</table>'
+                '<table class="inv-table">'
+                '<thead><tr>'
+                '<th>When (IST)</th>'
+                '<th>Code</th>'
+                '<th>Item Name</th>'
+                '<th style="text-align:right;">Old</th>'
+                '<th style="text-align:right;">New</th>'
+                '<th style="text-align:right;">Δ</th>'
+                '<th>Reason</th>'
+                '</tr></thead>'
+                '<tbody>' + "".join(rows_html) + '</tbody>'
+                                                 '</table>'
         )
 
         st.markdown(
