@@ -38,6 +38,15 @@ def now_ist():
 
 
 # =========================================================
+#  🔐 CENTRALIZED PASSWORDS
+# =========================================================
+MASTER_ADMIN_PASSWORD = "admin@agt2026"
+UPDATE_PASSWORD = "updatek"  # Used for Excel uploads and adjustments
+DN60_PASSWORD = "dn60k"  # Used for building valves
+KISHAN_PASSWORD = "kishanbhau"  # Universal Master key (Bypasses ALL locks)
+
+
+# =========================================================
 #  📜 AUTO-SCROLL & UI HELPERS
 # =========================================================
 def auto_scroll_to(element_id: str = None, delay: int = 250):
@@ -270,6 +279,7 @@ DEFAULT_PAGE = "📋   View Inventory"
 if "current_page" not in st.session_state:
     st.session_state["current_page"] = DEFAULT_PAGE
 
+
 # =========================================================
 #  SIDEBAR
 # =========================================================
@@ -278,17 +288,26 @@ with st.sidebar:
         '<div style="display:flex; align-items:center; gap:12px; padding:6px 4px 24px 4px;"><div style="width:46px; height:46px; border-radius:12px; background:linear-gradient(135deg,#E8D4A5 0%,#C6A75E 100%); display:flex; align-items:center; justify-content:center; font-size:22px;">📦</div><div><div style="font-size:0.98rem; font-weight:700; color:#FFFFFF;">Inventory Hub</div><div style="font-size:0.78rem; color:#C6A75E;">AGT Inventory Management</div></div></div>',
         unsafe_allow_html=True)
 
+    # --- ADMIN SECTION ---
     st.markdown(
         '<div style="font-size:0.72rem; color:#C6A75E; font-weight:700; margin:0 0 14px 12px; text-transform:uppercase;">Admin</div>',
         unsafe_allow_html=True)
+
     if st.button("📜   Audit Log", key="nav_audit", use_container_width=True,
                  type=("primary" if st.session_state["current_page"] == "📜   Audit Log" else "secondary")):
         st.session_state["current_page"] = "📜   Audit Log"
         st.rerun()
 
+    # --- PO REQUIREMENTS (Moved here, right below Audit Log) ---
+    if st.button("📋   PO Requirements", key="nav_po_req", use_container_width=True,
+                 type=("primary" if st.session_state["current_page"] == "📋   PO Requirements" else "secondary")):
+        st.session_state["current_page"] = "📋   PO Requirements"
+        st.rerun()
+
     st.markdown('<div style="margin:24px 12px 14px 12px; border-top:1px solid rgba(198,167,94,0.3);"></div>',
                 unsafe_allow_html=True)
 
+    # --- MAIN INVENTORY SECTION ---
     _main_items = [
         "📋   View Inventory",
         "⚠️   Low Stock Items",
@@ -296,7 +315,6 @@ with st.sidebar:
         "⚙️   Update by DN-60",
         "📊   Check Production",
         "🧮   Required Items",
-        "📋   PO Requirements",
     ]
 
     for _item in _main_items:
@@ -353,11 +371,34 @@ st.markdown("<br>", unsafe_allow_html=True)
 # ---------------------------------------------------------
 #  📋 NEW: PO REQUIREMENTS (GOOGLE SHEETS)
 # ---------------------------------------------------------
-# ---------------------------------------------------------
-#  📋 NEW: PO REQUIREMENTS (GOOGLE SHEETS)
-# ---------------------------------------------------------
 if page == "📋   PO Requirements":
     st.markdown('<div class="section-header">📋 PO Pending Requirements</div>', unsafe_allow_html=True)
+
+    # --- PASSWORD PROTECTION GATE ---
+    if not st.session_state.get("po_authed", False):
+        st.info("🔒 **Enter admin password to view PO Requirements.**")
+        col_pwd, col_btn = st.columns([3, 1])
+        with col_pwd:
+            po_pwd = st.text_input("Admin password", type="password", key="po_pwd_input", label_visibility="collapsed")
+        with col_btn:
+            if st.button("🔓 Unlock", type="primary", use_container_width=True):
+                # ALLOWS BOTH MASTER ADMIN AND KISHAN
+                if po_pwd == MASTER_ADMIN_PASSWORD or po_pwd.lower() == KISHAN_PASSWORD:
+                    st.session_state["po_authed"] = True
+                    st.rerun()
+                else:
+                    st.error("❌ Wrong password.")
+                    st.toast("🔐 Access denied!", icon="🚨")
+        st.stop()  # Stops the page from loading further until unlocked
+
+    # --- LOCK BUTTON (Visible after unlocking) ---
+    _, col_lock = st.columns([4, 1])
+    with col_lock:
+        if st.button("🔒 Lock", use_container_width=True, key="lock_po"):
+            st.session_state["po_authed"] = False
+            st.rerun()
+    # --------------------------------
+
     st.markdown(
         '<div class="section-sub">Fetches Pending orders from Google Sheets and checks stock availability against MongoDB.</div>',
         unsafe_allow_html=True)
@@ -526,8 +567,6 @@ if page == "📋   PO Requirements":
             use_container_width=True
         )
 
-
-
 # ---------------------------------------------------------
 #  SECTION 1 — Upload Excel & Update
 # ---------------------------------------------------------
@@ -544,10 +583,11 @@ elif page == "📤   Update from Excel":
     result_ph = st.empty()
 
     if st.button("🚀 Update Inventory", type="primary", use_container_width=True):
-        if password1.lower() == "kishan":
+        if password1.lower() == KISHAN_PASSWORD:
             st.success("👑 Welcome back, boss.")
-        elif password1.lower() != "updatek":
-            st.error(funny(WRONG_PASSWORD_LINES)); st.toast("🔐 Access denied!", icon="🚨")
+        elif password1.lower() != UPDATE_PASSWORD:
+            st.error(funny(WRONG_PASSWORD_LINES));
+            st.toast("🔐 Access denied!", icon="🚨")
         elif uploaded_file is None:
             st.warning(funny(NO_FILE_LINES))
         else:
@@ -602,10 +642,11 @@ elif page == "⚙️   Update by DN-60":
     dn60_result_ph = st.empty()
 
     if st.button("⚙️ Build Valves", type="primary", use_container_width=True):
-        if password2.lower() == "kishan":
+        if password2.lower() == KISHAN_PASSWORD:
             st.success("👑 Right away, boss.")
-        elif password2.lower() != "dn60k":
-            st.error(funny(WRONG_PASSWORD_LINES)); st.toast("🔐 Access denied!", icon="🚨")
+        elif password2.lower() != DN60_PASSWORD:
+            st.error(funny(WRONG_PASSWORD_LINES));
+            st.toast("🔐 Access denied!", icon="🚨")
         else:
             big_msg = big_order_message(dn60_count)
             if big_msg: st.info(big_msg)
@@ -755,7 +796,8 @@ elif page == "📋   View Inventory":
             st.session_state["inv_data"] = df
             st.session_state["inv_loaded_at"] = now_ist().strftime('%d-%m-%Y %H:%M')
         except Exception as e:
-            st.error(f"❌ Failed to load: {e}"); st.stop()
+            st.error(f"❌ Failed to load: {e}");
+            st.stop()
 
     df = st.session_state.get("inv_data")
     if df is None or df.empty: st.info("Click Load Inventory."); st.stop()
@@ -847,7 +889,7 @@ elif page == "📋   View Inventory":
         adj_reason = st.text_area("📝 Reason (required)", key="adj_reason_input", height=80, max_chars=300)
 
         if st.button("💾 Update Stock", type="primary", use_container_width=True):
-            if adj_pwd.lower() not in ("updatek", "kishan"):
+            if adj_pwd.lower() not in (UPDATE_PASSWORD, KISHAN_PASSWORD):
                 st.session_state["adj_flash_err"] = funny(WRONG_PASSWORD_LINES);
                 st.session_state.pop("inv_data", None);
                 st.rerun()
@@ -861,7 +903,8 @@ elif page == "📋   View Inventory":
                 st.rerun()
             else:
                 with adj_progress_ph.container():
-                    st.markdown('<div id="adj-progress-anchor"></div>', unsafe_allow_html=True); st.info(
+                    st.markdown('<div id="adj-progress-anchor"></div>', unsafe_allow_html=True);
+                    st.info(
                         "⏳ Updating stock…")
                 auto_scroll_to("adj-progress-anchor", delay=150)
 
@@ -921,7 +964,8 @@ elif page == "⚠️   Low Stock Items":
             st.session_state["low_loaded_at"] = now_ist().strftime('%d-%m-%Y %H:%M');
             st.session_state["low_cache_version"] = _LOW_CACHE_VERSION
         except Exception as e:
-            st.error(f"❌ Failed: {e}"); st.stop()
+            st.error(f"❌ Failed: {e}");
+            st.stop()
 
     df_low = st.session_state.get("low_data")
     if df_low is None or df_low.empty: st.success("🎉 No items are below thresholds!"); st.stop()
@@ -975,15 +1019,20 @@ elif page == "📜   Audit Log":
             admin_pwd = st.text_input("Admin password", type="password", label_visibility="collapsed")
         with col_btn:
             if st.button("🔓 Unlock", type="primary", use_container_width=True):
-                if admin_pwd == "admin@agt2026":
-                    st.session_state["audit_authed"] = True; st.rerun()
+                # ALLOWS BOTH MASTER ADMIN AND KISHAN
+                if admin_pwd == MASTER_ADMIN_PASSWORD or admin_pwd.lower() == KISHAN_PASSWORD:
+                    st.session_state["audit_authed"] = True;
+                    st.rerun()
                 else:
-                    st.error("❌ Wrong password."); st.toast("🔐 Access denied!", icon="🚨")
+                    st.error("❌ Wrong password.");
+                    st.toast("🔐 Access denied!", icon="🚨")
         st.stop()
 
     _, col_lock = st.columns([4, 1])
     with col_lock:
-        if st.button("🔒 Lock", use_container_width=True): st.session_state["audit_authed"] = False; st.rerun()
+        if st.button("🔒 Lock", use_container_width=True):
+            st.session_state["audit_authed"] = False;
+            st.rerun()
 
     if history_collection is None: st.error("⚠️ History unavailable."); st.stop()
 
@@ -1006,7 +1055,8 @@ elif page == "📜   Audit Log":
             st.session_state["audit_data"] = df_audit;
             st.session_state["audit_loaded_at"] = now_ist().strftime('%d-%m-%Y %H:%M')
         except Exception as e:
-            st.error(f"❌ Failed: {e}"); st.stop()
+            st.error(f"❌ Failed: {e}");
+            st.stop()
 
     df_audit = st.session_state.get("audit_data")
     if df_audit is None or df_audit.empty: st.info("📭 No entries yet."); st.stop()
