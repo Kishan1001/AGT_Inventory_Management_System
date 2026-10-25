@@ -353,6 +353,9 @@ st.markdown("<br>", unsafe_allow_html=True)
 # ---------------------------------------------------------
 #  📋 NEW: PO REQUIREMENTS (GOOGLE SHEETS)
 # ---------------------------------------------------------
+# ---------------------------------------------------------
+#  📋 NEW: PO REQUIREMENTS (GOOGLE SHEETS)
+# ---------------------------------------------------------
 if page == "📋   PO Requirements":
     st.markdown('<div class="section-header">📋 PO Pending Requirements</div>', unsafe_allow_html=True)
     st.markdown(
@@ -440,9 +443,13 @@ if page == "📋   PO Requirements":
                         total_short += shortfall
                         items_to_order += 1
 
+                    # --- EXTRACT PLANT NAME (Fallback to "—" if missing) ---
+                    plant_name = row.get("Plant", row.get("Plant Name", "—"))
+
                     report_rows.append({
                         "PO No": row.get("PO No", "—"),
                         "PO Date": row.get("PO Date", "—"),
+                        "Plant": plant_name,
                         "Item Code": item_code,
                         "Item Name": item_name,
                         "Req Qty": req_qty,
@@ -453,81 +460,73 @@ if page == "📋   PO Requirements":
 
                 df_report = pd.DataFrame(report_rows)
 
-                # 6. Display Summary Metrics
-                c1, c2, c3 = st.columns(3)
-                with c1:
-                    st.markdown(
-                        f'<div class="metric-card"><p class="metric-label">Total Pending Qty</p><p class="metric-value primary">{total_req:,}</p></div>',
-                        unsafe_allow_html=True)
-                with c2:
-                    st.markdown(
-                        f'<div class="metric-card {"accent-danger" if total_short > 0 else "accent-ok"}"><p class="metric-label">Total Shortfall</p><p class="metric-value {"danger" if total_short > 0 else "success"}">{total_short:,}</p></div>',
-                        unsafe_allow_html=True)
-                with c3:
-                    st.markdown(
-                        f'<div class="metric-card {"accent-warn" if items_to_order > 0 else "accent-ok"}"><p class="metric-label">Items to Order</p><p class="metric-value {"warn" if items_to_order > 0 else "success"}">{items_to_order}</p></div>',
-                        unsafe_allow_html=True)
-
-                st.markdown("<br>", unsafe_allow_html=True)
-
-
-                # 7. Display HTML Table
-                def clean(v):
-                    return str(v) if pd.notna(v) else "—"
-
-
-                rows_html = []
-                for _, r in df_report.iterrows():
-                    badge = "background:#FEE2E2; color:#991B1B;" if "ORDER" in r[
-                        "Status"] else "background:#D1FAE5; color:#065F46;"
-                    shortfall_color = "color:#DC2626; font-weight:700;" if r["Shortfall"] > 0 else "color:#6B7280;"
-
-                    rows_html.append(
-                        "<tr>"
-                        f"<td>{clean(r['PO No'])}</td>"
-                        f"<td>{clean(r['PO Date'])}</td>"
-                        f"<td style='font-family:JetBrains Mono,monospace; font-weight:600;'>{clean(r['Item Code'])}</td>"
-                        f"<td>{clean(r['Item Name'])}</td>"
-                        f"<td style='text-align:right;'>{r['Req Qty']}</td>"
-                        f"<td style='text-align:right;'>{r['Stock Available']}</td>"
-                        f"<td style='text-align:right; {shortfall_color}'>{r['Shortfall']}</td>"
-                        f"<td style='text-align:center;'><span style='padding:4px 8px; border-radius:4px; font-size:0.7rem; font-weight:700; {badge}'>{r['Status']}</span></td>"
-                        "</tr>"
-                    )
-
-                html_table = f"""
-                <div class="inv-table-wrap">
-                    <table class="inv-table">
-                        <thead><tr>
-                            <th>PO No</th><th>PO Date</th><th>Item Code</th><th>Item Name</th>
-                            <th style="text-align:right;">Req Qty</th><th style="text-align:right;">Stock</th>
-                            <th style="text-align:right;">Shortfall</th><th style="text-align:center;">Status</th>
-                        </tr></thead>
-                        <tbody>{''.join(rows_html)}</tbody>
-                    </table>
-                </div>
-                """
-                st.markdown(html_table, unsafe_allow_html=True)
-
-                # 8. Download Button
-                st.markdown("<br>", unsafe_allow_html=True)
-                buffer = io.BytesIO()
-                with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
-                    df_report.to_excel(writer, index=False, sheet_name="PO Requirements")
-
-                st.download_button(
-                    label="📥 Download Report as Excel",
-                    data=buffer.getvalue(),
-                    file_name=f"PO_Requirements_{now_ist().strftime('%d-%m-%Y')}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True
-                )
+                # Store in session state so it doesn't disappear when sorting
+                st.session_state["po_report_df"] = df_report
+                st.session_state["po_report_metrics"] = (total_req, total_short, items_to_order)
 
             except gspread.exceptions.APIError as e:
                 st.error(
                     f"❌ Google API Error: Make sure the service account email is shared on the sheet. Details: {e}")
             except Exception as e:
                 st.error(f"❌ Failed to fetch sheet: {e}")
+
+    # --- RENDER RESULTS (From Session State) ---
+    if "po_report_df" in st.session_state:
+        df_report = st.session_state["po_report_df"]
+        total_req, total_short, items_to_order = st.session_state["po_report_metrics"]
+
+        # 6. Display Summary Metrics
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.markdown(
+                f'<div class="metric-card"><p class="metric-label">Total Pending Qty</p><p class="metric-value primary">{total_req:,}</p></div>',
+                unsafe_allow_html=True)
+        with c2:
+            st.markdown(
+                f'<div class="metric-card {"accent-danger" if total_short > 0 else "accent-ok"}"><p class="metric-label">Total Shortfall</p><p class="metric-value {"danger" if total_short > 0 else "success"}">{total_short:,}</p></div>',
+                unsafe_allow_html=True)
+        with c3:
+            st.markdown(
+                f'<div class="metric-card {"accent-warn" if items_to_order > 0 else "accent-ok"}"><p class="metric-label">Items to Order</p><p class="metric-value {"warn" if items_to_order > 0 else "success"}">{items_to_order}</p></div>',
+                unsafe_allow_html=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # 7. DISPLAY NATIVE DATAFRAME (Allows Native Column Sorting)
+        st.dataframe(
+            df_report,
+            use_container_width=True,
+            hide_index=True,
+            height=600,
+            column_config={
+                "PO No": st.column_config.TextColumn("PO No"),
+                "PO Date": st.column_config.TextColumn("PO Date"),
+                "Plant": st.column_config.TextColumn("Plant"),
+                "Item Code": st.column_config.TextColumn("Item Code"),
+                "Item Name": st.column_config.TextColumn("Item Name"),
+                "Req Qty": st.column_config.NumberColumn("Req Qty", format="%d"),
+                "Stock Available": st.column_config.NumberColumn("Stock", format="%d"),
+                "Shortfall": st.column_config.NumberColumn("Shortfall", format="%d"),
+                "Status": st.column_config.TextColumn("Status")
+            }
+        )
+
+        # 8. Download Button
+        st.markdown("<br>", unsafe_allow_html=True)
+        buffer = io.BytesIO()
+
+        with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+            df_report.to_excel(writer, index=False, sheet_name="PO Requirements")
+
+        st.download_button(
+            label="📥 Download Report as Excel",
+            data=buffer.getvalue(),
+            file_name=f"PO_Requirements_{now_ist().strftime('%d-%m-%Y')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True
+        )
+
+
 
 # ---------------------------------------------------------
 #  SECTION 1 — Upload Excel & Update
