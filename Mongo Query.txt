@@ -12,3 +12,4 @@ db.Item_Inventory.updateMany(
     { $set: { Item_subcategory: "STATIONARY" } }
 )
 ----------------------------------------------------------------------------------------
+

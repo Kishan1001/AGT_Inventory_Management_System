@@ -2,7 +2,7 @@
 # ---------------------------------------------------------
 #  STREAMLIT WEB UI — Enterprise Dashboard
 #  Palette: #1F2A44 (Navy) · #E8DCC8 (Cream) · #C6A75E (Gold)
-#  v43: Removed Location column from PO Requirements
+#  v44: Updated PO Requirements (Sr No, Delivery Status, Partial/Pending logic)
 #  Built with ❤️ for Kishan
 # ---------------------------------------------------------
 import io
@@ -191,8 +191,6 @@ def log_history(item_code, item_name, old_qty, new_qty, reason):
                  "Old_Qty": int(old_qty), "New_Qty": int(new_qty), "Change": int(new_qty) - int(old_qty),
                  "Reason": str(reason), "Timestamp": now_ist().strftime("%d-%m-%Y %H:%M:%S")})
         except Exception as e:
-            # It's highly recommended to print the error instead of a bare 'pass'
-            # so you can see if the insert is failing in the Streamlit logs.
             print(f"Failed to log history: {e}")
 
 
@@ -278,7 +276,6 @@ st.markdown("""
 DEFAULT_PAGE = "📋   View Inventory"
 if "current_page" not in st.session_state:
     st.session_state["current_page"] = DEFAULT_PAGE
-
 
 # =========================================================
 #  SIDEBAR
@@ -430,9 +427,11 @@ if page == "📋   PO Requirements":
                     st.error(f"❌ Missing columns in Google Sheet: {', '.join(missing_cols)}")
                     st.stop()
 
-                # 4. Filter for "Pending" status (case-insensitive)
+                # 4. Filter for "Pending", "Partial", or "Partially" status
+                status_col = df_sheet["Delivery Status"].astype(str).str.strip().str.lower()
                 df_pending = df_sheet[
-                    df_sheet["Delivery Status"].astype(str).str.strip().str.lower() == "pending"].copy()
+                    status_col.str.contains("pending|partial", regex=True, na=False)
+                ].copy()
 
                 if df_pending.empty:
                     st.success("🎉 No pending items found in the Google Sheet!")
@@ -446,6 +445,9 @@ if page == "📋   PO Requirements":
                 total_req = 0
                 total_short = 0
                 items_to_order = 0
+
+                # Initialize Serial Number
+                sr_no = 1
 
                 for _, row in df_pending.iterrows():
                     # --- CLEAN & FORMAT ITEM CODE ---
@@ -484,10 +486,12 @@ if page == "📋   PO Requirements":
                         total_short += shortfall
                         items_to_order += 1
 
-                    # --- EXTRACT PLANT NAME (Fallback to "—" if missing) ---
+                    # --- EXTRACT PLANT NAME & DELIVERY STATUS ---
                     plant_name = row.get("Plant", row.get("Plant Name", "—"))
+                    delivery_status = str(row.get("Delivery Status", "—")).strip()
 
                     report_rows.append({
+                        "Sr. No.": sr_no,
                         "PO No": row.get("PO No", "—"),
                         "PO Date": row.get("PO Date", "—"),
                         "Plant": plant_name,
@@ -496,8 +500,11 @@ if page == "📋   PO Requirements":
                         "Req Qty": req_qty,
                         "Stock Available": stock,
                         "Shortfall": shortfall,
-                        "Status": "🛒 ORDER" if shortfall > 0 else "✅ OK"
+                        "Status": "🛒 ORDER" if shortfall > 0 else "✅ OK",
+                        "Delivery Status": delivery_status  # <--- MOVED TO THE END HERE
                     })
+
+                    sr_no += 1
 
                 df_report = pd.DataFrame(report_rows)
 
@@ -540,6 +547,7 @@ if page == "📋   PO Requirements":
             hide_index=True,
             height=600,
             column_config={
+                "Sr. No.": st.column_config.NumberColumn("Sr. No.", format="%d"),
                 "PO No": st.column_config.TextColumn("PO No"),
                 "PO Date": st.column_config.TextColumn("PO Date"),
                 "Plant": st.column_config.TextColumn("Plant"),
@@ -548,7 +556,8 @@ if page == "📋   PO Requirements":
                 "Req Qty": st.column_config.NumberColumn("Req Qty", format="%d"),
                 "Stock Available": st.column_config.NumberColumn("Stock", format="%d"),
                 "Shortfall": st.column_config.NumberColumn("Shortfall", format="%d"),
-                "Status": st.column_config.TextColumn("Status")
+                "Status": st.column_config.TextColumn("Status"),
+                "Delivery Status": st.column_config.TextColumn("Delivery Status")  # <--- MOVED TO END
             }
         )
 
