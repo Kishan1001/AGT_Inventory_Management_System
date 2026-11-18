@@ -888,8 +888,19 @@ elif page == "📋   View Inventory":
         with adj_c1:
             adj_pwd = st.text_input("🔒 Password", type="password", key="adj_pwd")
         with adj_c2:
-            adj_item = st.selectbox("Item", ["— Select item —"] + filtered["Item_code"].astype(str).tolist(),
-                                    key="adj_item")
+            # Create a combined list of "Code — Item Name" for the dropdown
+            item_options = ["— Select item —"] + [
+                f"{row['Item_code']} — {row['Item_name']}"
+                for _, row in filtered.iterrows()
+            ]
+            adj_item_display = st.selectbox("Item", item_options, key="adj_item")
+
+            # Extract just the Item Code for database operations
+            if adj_item_display != "— Select item —":
+                adj_item = adj_item_display.split(" — ")[0]
+            else:
+                adj_item = "— Select item —"
+
         _current_qty = int(
             collection.find_one({"Item_code": adj_item}).get("Quantity", 0)) if adj_item != "— Select item —" else 0
         with adj_c3:
