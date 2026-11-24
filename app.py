@@ -195,6 +195,27 @@ def log_history(item_code, item_name, old_qty, new_qty, reason):
 
 
 # =========================================================
+#  🧹 AUTO-CLEAN INITIAL UPLOAD LOGS
+# =========================================================
+def clean_initial_audit_logs():
+    """Deletes only the initial Excel upload logs where Change == New_Qty."""
+    if history_collection is None:
+        return 0
+
+    try:
+        # Query: Reason is 'Excel upload' AND New_Qty equals Change
+        query = {
+            "Reason": "Excel upload",
+            "$expr": {"$eq": ["$New_Qty", "$Change"]}
+        }
+        result = history_collection.delete_many(query)
+        return result.deleted_count
+    except Exception as e:
+        print(f"Failed to clean history: {e}")
+        return 0
+
+
+# =========================================================
 #  😄 FUN ZONE
 # =========================================================
 FUN_MODE = False
@@ -220,6 +241,15 @@ def late_night_message():
 
 def funny(pool): return random.choice(pool) if FUN_MODE else pool[0]
 
+
+# =========================================================
+#  🧹 RUN CLEANUP ON STARTUP (ONCE PER SESSION)
+# =========================================================
+if not st.session_state.get("_initial_cleanup_done", False):
+    deleted_count = clean_initial_audit_logs()
+    if deleted_count > 0:
+        st.toast(f"🧹 Cleaned up {deleted_count} old Excel audit logs", icon="✨")
+    st.session_state["_initial_cleanup_done"] = True
 
 # =========================================================
 #  PAGE CONFIG & CUSTOM CSS
@@ -1065,6 +1095,16 @@ elif page == "📜   Audit Log":
 
     if audit_load_clicked or "audit_data" not in st.session_state:
         try:
+            # 1. CLEAN THE DATABASE FIRST
+            clean_query = {
+                "Reason": "Excel upload",
+                "$expr": {"$eq": ["$New_Qty", "$Change"]}
+            }
+            deleted = history_collection.delete_many(clean_query)
+            if deleted.deleted_count > 0:
+                st.toast(f"🧹 Cleaned up {deleted.deleted_count} old Excel audit logs", icon="✨")
+
+            # 2. THEN FETCH THE FRESH DATA
             rows = list(history_collection.find({}, {"_id": 0}))
             df_audit = pd.DataFrame(rows)
             if not df_audit.empty:
